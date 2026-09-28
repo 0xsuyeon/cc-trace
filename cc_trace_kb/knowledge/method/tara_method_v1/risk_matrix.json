@@ -1,0 +1,49 @@
+{
+  "matrix": {
+    "SEVERE": {
+      "VERY_LOW": 2,
+      "LOW": 3,
+      "MEDIUM": 4,
+      "HIGH": 5
+    },
+    "MAJOR": {
+      "VERY_LOW": 1,
+      "LOW": 2,
+      "MEDIUM": 3,
+      "HIGH": 4
+    },
+    "MODERATE": {
+      "VERY_LOW": 1,
+      "LOW": 2,
+      "MEDIUM": 2,
+      "HIGH": 3
+    },
+    "NEGLIGIBLE": {
+      "VERY_LOW": 1,
+      "LOW": 1,
+      "MEDIUM": 1,
+      "HIGH": 1
+    }
+  },
+  "aggregation": {
+    "threat_attack_feasibility": "Use the highest attack feasibility among attack paths linked to the threat.",
+    "impact_vector": "For each S/F/O/P dimension use the highest impact among the damage scenarios used in the risk record.",
+    "final_risk": "max(R_S,R_F,R_O,R_P)"
+  },
+  "source": {
+    "manual_section": "3.6.2",
+    "manual_table": "표 28",
+    "iso_basis": "ISO/SAE 21434 Annex H Table H.8"
+  },
+  "schema_version": "tara-risk-method-1.2",
+  "selected_method": "RISK_MATRIX",
+  "selected_by_reference_tara": true,
+  "manual_alternatives": [
+    {
+      "method": "ORGANIZATION_DEFINED_RISK_FORMULA",
+      "implemented": false,
+      "used_by_reference_tara": false
+    }
+  ],
+  "selection_note": "The Korean manual describes risk matrix and organization-defined risk formula approaches. The final reference TARA uses the risk matrix, so this KB implements the risk-matrix branch only."
+}

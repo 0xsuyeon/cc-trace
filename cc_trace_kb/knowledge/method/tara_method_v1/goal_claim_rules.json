@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "condition": "treatment == REDUCE",
+      "expected_output": "CYBERSECURITY_GOAL"
+    },
+    {
+      "condition": "treatment == RETAIN and retained risk is justified/assumption-bound",
+      "expected_output": "CYBERSECURITY_CLAIM"
+    }
+  ],
+  "source": {
+    "manual_section": "3.8",
+    "report_basis": "WP-09-03/WP-09-04"
+  }
+}

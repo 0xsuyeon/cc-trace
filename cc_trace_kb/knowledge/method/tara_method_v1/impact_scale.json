@@ -1,0 +1,58 @@
+{
+  "levels": [
+    "NEGLIGIBLE",
+    "MODERATE",
+    "MAJOR",
+    "SEVERE"
+  ],
+  "dimensions": [
+    "SAFETY",
+    "FINANCIAL",
+    "OPERATIONAL",
+    "PRIVACY"
+  ],
+  "source": {
+    "manual_section": "3.3",
+    "iso_basis": "ISO/SAE 21434 15.5 / Annex F"
+  },
+  "schema_version": "tara-impact-method-1.2",
+  "selected_dimensions": [
+    "SAFETY",
+    "FINANCIAL",
+    "OPERATIONAL",
+    "PRIVACY"
+  ],
+  "criteria_source": {
+    "document": "ISO/SAE 21434 기반 사이버보안 위협 분석 및 위험 평가 매뉴얼",
+    "section": "3.3.2",
+    "table": "표 11 영향 등급 평가 기준",
+    "basis": "ISO/SAE 21434 Annex F"
+  },
+  "criteria": {
+    "SEVERE": {
+      "SAFETY": "치명적 상해 (생존 불확실)",
+      "FINANCIAL": "치명적 피해 (극복 불가)",
+      "OPERATIONAL": "핵심 기능 손실",
+      "PRIVACY": "치명적 영향 (신원 특정 가능, 민감정보)"
+    },
+    "MAJOR": {
+      "SAFETY": "심각한 상해 (생존 가능성)",
+      "FINANCIAL": "심각한 피해 (극복 가능)",
+      "OPERATIONAL": "중요 기능 손실",
+      "PRIVACY": "심각한 영향 (신원 특정 어려움, 민감정보)"
+    },
+    "MODERATE": {
+      "SAFETY": "가벼운 부상",
+      "FINANCIAL": "보통의 피해",
+      "OPERATIONAL": "부분적 기능 손실",
+      "PRIVACY": "보통의 영향 (신원 특정 어려움, 비민감정보)"
+    },
+    "NEGLIGIBLE": {
+      "SAFETY": "부상 없음",
+      "FINANCIAL": "영향 없음",
+      "OPERATIONAL": "인지 불가",
+      "PRIVACY": "무시 가능 (신원 특정 가능성 희박, 비민감정보)"
+    }
+  },
+  "automation_note": "These criteria are evaluation knowledge, not an automatic truth oracle. A new damage scenario still requires evidence/rationale before assigning an impact rating."
+}

@@ -1,0 +1,33 @@
+{
+  "matrix": {
+    "SEVERE": {
+      "PHYSICAL": "CAL2",
+      "LOCAL": "CAL3",
+      "ADJACENT": "CAL4",
+      "NETWORK": "CAL4"
+    },
+    "MAJOR": {
+      "PHYSICAL": "CAL1",
+      "LOCAL": "CAL2",
+      "ADJACENT": "CAL3",
+      "NETWORK": "CAL4"
+    },
+    "MODERATE": {
+      "PHYSICAL": "CAL1",
+      "LOCAL": "CAL1",
+      "ADJACENT": "CAL2",
+      "NETWORK": "CAL3"
+    },
+    "NEGLIGIBLE": {
+      "PHYSICAL": null,
+      "LOCAL": null,
+      "ADJACENT": null,
+      "NETWORK": null
+    }
+  },
+  "rule": "CAL is based on maximum impact and attack vector, not directly on risk value.",
+  "source": {
+    "manual_section": "3.7/3.8 CAL example",
+    "iso_basis": "ISO/SAE 21434 Annex E example"
+  }
+}

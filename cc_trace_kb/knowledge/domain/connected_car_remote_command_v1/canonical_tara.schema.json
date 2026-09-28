@@ -1,0 +1,872 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CC-TRACE Connected-Car Remote Command Canonical TARA v1.1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "scope",
+    "assumptions",
+    "operational_environment",
+    "logical_components",
+    "functions",
+    "assets",
+    "damage_scenarios",
+    "threat_scenarios",
+    "attack_paths",
+    "risk_records",
+    "treatments",
+    "cybersecurity_goals",
+    "cybersecurity_claims",
+    "function_asset_links",
+    "function_damage_links",
+    "reference_architecture",
+    "method_reference_from_report",
+    "expected_cardinality"
+  ],
+  "$defs": {
+    "id_if": {
+      "type": "string",
+      "pattern": "^IF-0[1-7]$"
+    },
+    "id_as": {
+      "type": "string",
+      "pattern": "^AS-(0[1-9]|1[0-3])$"
+    },
+    "id_ds": {
+      "type": "string",
+      "pattern": "^DS-(0[1-9]|1[0-7])$"
+    },
+    "id_ts": {
+      "type": "string",
+      "pattern": "^TS-(0[1-9]|[1-3][0-9]|4[0-3])$"
+    },
+    "id_ap": {
+      "type": "string",
+      "pattern": "^AP-(0[1-9]|1[0-6])$"
+    },
+    "id_goal": {
+      "type": "string",
+      "pattern": "^CSG-(0[1-9]|10)$"
+    },
+    "impact": {
+      "type": "string",
+      "enum": [
+        "NEGLIGIBLE",
+        "MODERATE",
+        "MAJOR",
+        "SEVERE"
+      ]
+    },
+    "af": {
+      "type": "string",
+      "enum": [
+        "VERY_LOW",
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+      ]
+    },
+    "treatment": {
+      "type": "string",
+      "enum": [
+        "REDUCE",
+        "RETAIN",
+        "AVOID",
+        "SHARE"
+      ]
+    },
+    "property": {
+      "type": "string",
+      "enum": [
+        "CONFIDENTIALITY",
+        "INTEGRITY",
+        "AVAILABILITY"
+      ]
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "item_id",
+        "name",
+        "analysis_type",
+        "statement"
+      ],
+      "properties": {
+        "item_id": {
+          "const": "ITEM-01"
+        },
+        "analysis_type": {
+          "const": "GENERIC_REFERENCE"
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "statement"
+        ],
+        "properties": {
+          "id": {
+            "pattern": "^A-0[1-7]$"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "operational_environment": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name_en",
+          "name_ko",
+          "interaction",
+          "classification"
+        ],
+        "properties": {
+          "id": {
+            "pattern": "^OE-0[1-8]$"
+          }
+        }
+      }
+    },
+    "logical_components": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name_en",
+          "name_ko",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "pattern": "^C-0[1-5]$"
+          }
+        }
+      }
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name_en",
+          "name_ko",
+          "description",
+          "cybersecurity_relevant"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id_if"
+          },
+          "cybersecurity_relevant": {
+            "const": true
+          }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "properties",
+          "damage_scope_raw",
+          "damage_scope"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id_as"
+          },
+          "properties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/property"
+            },
+            "uniqueItems": true
+          },
+          "damage_scope": {
+            "type": "object",
+            "required": [
+              "type",
+              "candidate_ids",
+              "condition"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "EXPLICIT",
+                  "FUNCTION_CONDITIONAL_SUBSET",
+                  "STATE_CONDITIONAL_SUBSET"
+                ]
+              },
+              "candidate_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/id_ds"
+                },
+                "uniqueItems": true
+              },
+              "condition": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "damage_scenarios": {
+      "type": "array",
+      "minItems": 17,
+      "maxItems": 17,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "statement",
+          "impact",
+          "rationale"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id_ds"
+          },
+          "impact": {
+            "type": "object",
+            "required": [
+              "safety",
+              "financial",
+              "operational",
+              "privacy",
+              "raw"
+            ],
+            "properties": {
+              "safety": {
+                "$ref": "#/$defs/impact"
+              },
+              "financial": {
+                "$ref": "#/$defs/impact"
+              },
+              "operational": {
+                "$ref": "#/$defs/impact"
+              },
+              "privacy": {
+                "$ref": "#/$defs/impact"
+              }
+            }
+          }
+        }
+      }
+    },
+    "threat_scenarios": {
+      "type": "array",
+      "minItems": 43,
+      "maxItems": 43,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "asset_id",
+          "compromised_properties",
+          "cause",
+          "statement",
+          "attack_path_ids",
+          "risk_record_id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id_ts"
+          },
+          "asset_id": {
+            "$ref": "#/$defs/id_as"
+          },
+          "compromised_properties": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/property"
+            },
+            "uniqueItems": true
+          },
+          "cause": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attack_path_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/id_ap"
+            },
+            "uniqueItems": true
+          },
+          "risk_record_id": {
+            "$ref": "#/$defs/id_ts"
+          }
+        }
+      }
+    },
+    "attack_paths": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "steps",
+          "steps_raw",
+          "attack_potential",
+          "expected_score",
+          "expected_feasibility"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id_ap"
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "string",
+              "pattern": "^\\d+\\)\\s+"
+            }
+          },
+          "attack_potential": {
+            "type": "object",
+            "required": [
+              "elapsed_time",
+              "specialist_expertise",
+              "knowledge_of_item",
+              "window_of_opportunity",
+              "equipment"
+            ],
+            "properties": {
+              "elapsed_time": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "specialist_expertise": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "knowledge_of_item": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "window_of_opportunity": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "equipment": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "expected_score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expected_feasibility": {
+            "$ref": "#/$defs/af"
+          }
+        }
+      }
+    },
+    "risk_records": {
+      "type": "array",
+      "minItems": 43,
+      "maxItems": 43,
+      "items": {
+        "type": "object",
+        "required": [
+          "threat_id",
+          "asset_id",
+          "risk_damage_ids",
+          "attack_feasibility",
+          "impact_vector",
+          "risk_by_dimension",
+          "expected_final_risk"
+        ],
+        "properties": {
+          "threat_id": {
+            "$ref": "#/$defs/id_ts"
+          },
+          "asset_id": {
+            "$ref": "#/$defs/id_as"
+          },
+          "risk_damage_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/id_ds"
+            },
+            "uniqueItems": true
+          },
+          "attack_feasibility": {
+            "$ref": "#/$defs/af"
+          },
+          "impact_vector": {
+            "type": "object",
+            "required": [
+              "safety",
+              "financial",
+              "operational",
+              "privacy"
+            ],
+            "properties": {
+              "safety": {
+                "$ref": "#/$defs/impact"
+              },
+              "financial": {
+                "$ref": "#/$defs/impact"
+              },
+              "operational": {
+                "$ref": "#/$defs/impact"
+              },
+              "privacy": {
+                "$ref": "#/$defs/impact"
+              }
+            }
+          },
+          "risk_by_dimension": {
+            "type": "object",
+            "required": [
+              "safety",
+              "financial",
+              "operational",
+              "privacy"
+            ],
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "expected_final_risk": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        }
+      }
+    },
+    "treatments": {
+      "type": "array",
+      "minItems": 43,
+      "maxItems": 43,
+      "items": {
+        "type": "object",
+        "required": [
+          "threat_id",
+          "risk",
+          "decision",
+          "rationale"
+        ],
+        "properties": {
+          "threat_id": {
+            "$ref": "#/$defs/id_ts"
+          },
+          "risk": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "decision": {
+            "$ref": "#/$defs/treatment"
+          }
+        }
+      }
+    },
+    "cybersecurity_goals": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "asset_ids",
+          "threat_ids",
+          "expected_max_risk",
+          "treatment",
+          "expected_cal",
+          "statement",
+          "max_impact",
+          "representative_attack_vector"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id_goal"
+          },
+          "asset_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/id_as"
+            },
+            "uniqueItems": true
+          },
+          "threat_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/id_ts"
+            },
+            "uniqueItems": true
+          },
+          "expected_max_risk": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "treatment": {
+            "const": "REDUCE"
+          },
+          "expected_cal": {
+            "enum": [
+              "CAL1",
+              "CAL2",
+              "CAL3",
+              "CAL4"
+            ]
+          },
+          "max_impact": {
+            "$ref": "#/$defs/impact"
+          },
+          "representative_attack_vector": {
+            "enum": [
+              "PHYSICAL",
+              "LOCAL",
+              "ADJACENT",
+              "NETWORK"
+            ]
+          }
+        }
+      }
+    },
+    "cybersecurity_claims": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "asset_ids",
+          "threat_ids",
+          "risk",
+          "treatment",
+          "statement"
+        ],
+        "properties": {
+          "id": {
+            "const": "CSC-01"
+          },
+          "threat_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/id_ts"
+            },
+            "uniqueItems": true
+          },
+          "risk": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "treatment": {
+            "const": "RETAIN"
+          }
+        }
+      }
+    },
+    "function_asset_links": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": [
+          "function_id",
+          "asset_id",
+          "relation",
+          "evidence_basis",
+          "source_refs"
+        ],
+        "properties": {
+          "function_id": {
+            "$ref": "#/$defs/id_if"
+          },
+          "asset_id": {
+            "$ref": "#/$defs/id_as"
+          },
+          "relation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_basis": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "function_damage_links": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": [
+          "function_id",
+          "damage_ids",
+          "relation",
+          "evidence_basis",
+          "source_refs"
+        ],
+        "properties": {
+          "function_id": {
+            "$ref": "#/$defs/id_if"
+          },
+          "damage_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/$defs/id_ds"
+            }
+          },
+          "relation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_basis": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "reference_architecture": {
+      "type": "object",
+      "required": [
+        "nodes",
+        "edges",
+        "note"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "type",
+              "boundary"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "boundary": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "target",
+              "relation",
+              "evidence_basis",
+              "source_ref"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1
+              },
+              "relation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_basis": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_ref": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "method_reference_from_report": {
+      "type": "object",
+      "required": [
+        "attack_potential",
+        "risk_matrix",
+        "treatment_policy",
+        "cal_matrix"
+      ],
+      "properties": {
+        "attack_potential": {
+          "type": "object"
+        },
+        "risk_matrix": {
+          "type": "object"
+        },
+        "treatment_policy": {
+          "type": "object"
+        },
+        "cal_matrix": {
+          "type": "object"
+        }
+      }
+    },
+    "expected_cardinality": {
+      "type": "object",
+      "required": [
+        "functions",
+        "assets",
+        "damage_scenarios",
+        "threat_scenarios",
+        "attack_paths",
+        "impact_ratings",
+        "attack_feasibility_ratings",
+        "risk_values",
+        "reduce",
+        "retain",
+        "cybersecurity_goals",
+        "cybersecurity_claims"
+      ],
+      "properties": {
+        "functions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "damage_scenarios": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "threat_scenarios": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attack_paths": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "impact_ratings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attack_feasibility_ratings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "risk_values": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reduce": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retain": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cybersecurity_goals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cybersecurity_claims": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

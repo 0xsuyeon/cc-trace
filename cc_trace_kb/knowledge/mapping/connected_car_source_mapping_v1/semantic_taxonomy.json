@@ -1,0 +1,48 @@
+{
+  "intents": [
+    {
+      "intent": "ACCESS_CONTROL",
+      "function_id": "IF-01",
+      "description": "Remote lock/unlock or equivalent vehicle-access control."
+    },
+    {
+      "intent": "PROPULSION_MOBILITY",
+      "function_id": "IF-02",
+      "description": "Remote propulsion start/stop or mobility authorization."
+    },
+    {
+      "intent": "CLOSURE_MECHANICAL_ACCESS",
+      "function_id": "IF-03",
+      "description": "Remote window, sunroof, trunk/frunk, charge-port or other motorized closure control."
+    },
+    {
+      "intent": "THERMAL_COMFORT",
+      "function_id": "IF-04",
+      "description": "Remote HVAC, heating, defrost, seat/steering thermal comfort."
+    },
+    {
+      "intent": "CHARGING_HV_BATTERY",
+      "function_id": "IF-05",
+      "description": "Remote charge start/stop/current/limit or HV-battery energy-management control."
+    },
+    {
+      "intent": "SIGNALING_VEHICLE_FINDING",
+      "function_id": "IF-06",
+      "description": "Remote horn/light/hazard/vehicle-finding signaling."
+    },
+    {
+      "intent": "SECURITY_OPERATIONAL_MODE",
+      "function_id": "IF-07",
+      "description": "Remote security/restricted/valet/sentry/operational mode control."
+    },
+    {
+      "intent": "UNKNOWN",
+      "function_id": null,
+      "description": "Insufficient evidence for IF-01..IF-07."
+    }
+  ],
+  "llm_contract": {
+    "allowed_output": "One fixed intent or UNKNOWN, plus existing source fact IDs.",
+    "forbidden": "Creating assets, threats, attack paths, risk values, controls, OEM internals, or verification verdicts."
+  }
+}

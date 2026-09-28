@@ -1,0 +1,22 @@
+{
+  "policy_id": "STUDY_REFERENCE_POLICY_V1",
+  "rules": [
+    {
+      "min_risk": 2,
+      "max_risk": 5,
+      "decision": "REDUCE",
+      "expression": "risk >= 2"
+    },
+    {
+      "min_risk": 1,
+      "max_risk": 1,
+      "decision": "RETAIN",
+      "expression": "risk < 2"
+    }
+  ],
+  "iso_mandated": false,
+  "source": {
+    "manual_section": "3.7.2",
+    "note": "The Korean manual presents this threshold as an example; the study explicitly adopts it for the reference item."
+  }
+}

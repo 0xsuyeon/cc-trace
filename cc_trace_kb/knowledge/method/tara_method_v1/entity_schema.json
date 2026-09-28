@@ -1,0 +1,112 @@
+{
+  "schema_version": "tara-entity-ontology-1.1",
+  "entities": {
+    "ItemDefinition": {
+      "describes": [
+        "Item",
+        "OperationalEnvironment",
+        "LogicalComponent",
+        "ItemFunction"
+      ]
+    },
+    "Item": {
+      "contains": [
+        "LogicalComponent"
+      ],
+      "interacts_with": [
+        "OperationalEnvironment"
+      ],
+      "realizes": [
+        "ItemFunction"
+      ]
+    },
+    "OperationalEnvironment": {
+      "boundary": "OUTSIDE_ITEM"
+    },
+    "LogicalComponent": {
+      "boundary": "ITEM_INTERNAL"
+    },
+    "ItemFunction": {
+      "relates_to": [
+        "Asset"
+      ]
+    },
+    "Asset": {
+      "requires": [
+        "cybersecurity_properties"
+      ],
+      "relates_to": [
+        "DamageScenario"
+      ]
+    },
+    "DamageScenario": {
+      "requires": [
+        "impact.safety",
+        "impact.financial",
+        "impact.operational",
+        "impact.privacy"
+      ]
+    },
+    "ThreatScenario": {
+      "requires": [
+        "Asset",
+        "compromised_property",
+        "cause"
+      ],
+      "relates_to": [
+        "DamageScenario",
+        "AttackPath"
+      ]
+    },
+    "AttackPath": {
+      "requires": [
+        "steps",
+        "ET",
+        "SE",
+        "KoIC",
+        "WoO",
+        "Eq"
+      ],
+      "produces": [
+        "AttackFeasibility"
+      ]
+    },
+    "RiskRecord": {
+      "inputs": [
+        "DamageScenario.impact",
+        "ThreatScenario.aggregate_attack_feasibility"
+      ],
+      "produces": [
+        "risk_by_dimension",
+        "final_risk"
+      ]
+    },
+    "RiskTreatment": {
+      "input": [
+        "final_risk"
+      ],
+      "produces": [
+        "REDUCE",
+        "RETAIN",
+        "AVOID",
+        "SHARE"
+      ]
+    },
+    "CybersecurityGoal": {
+      "covers": [
+        "REDUCE ThreatScenario"
+      ]
+    },
+    "CybersecurityClaim": {
+      "covers": [
+        "RETAIN/SHARE ThreatScenario when justified"
+      ]
+    }
+  },
+  "invariants": [
+    "OperationalEnvironment is outside the Item boundary; it is described by Item Definition and interacts with the Item.",
+    "Every threat references one existing asset and at least one attack path.",
+    "Every risk record is reproducible from damage impacts and aggregate attack feasibility.",
+    "Reference risk and product-specific risk are distinct."
+  ]
+}

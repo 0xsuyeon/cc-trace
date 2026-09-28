@@ -1,0 +1,235 @@
+{
+  "schema_version": "cc-trace-item-definition-1.0",
+  "item": {
+    "name": "Connected-Car Remote Vehicle Function Control",
+    "domain": "CONNECTED_CAR_REMOTE_VEHICLE_FUNCTION_CONTROL",
+    "boundary": {
+      "definition": "Vehicle-side E/E elements that receive, process, route, execute/reject externally requested remote vehicle-function commands.",
+      "basis": "CC_TRACE_DOMAIN_FIXED"
+    },
+    "function_ids": [
+      "IF-01",
+      "IF-04",
+      "IF-05"
+    ]
+  },
+  "architecture": {
+    "mode": "REFERENCE",
+    "basis": "CC_TRACE_CANONICAL_REFERENCE",
+    "components": [
+      {
+        "id": "C-01",
+        "name": "Vehicle External Communication Endpoint",
+        "name_ko": "차량 외부 통신 종단점",
+        "role": "외부 원격명령을 차량 E/E 영역에서 처음 수신하는 논리적 종단점",
+        "component_type": "EXTERNAL_COMM_ENDPOINT",
+        "basis": "REFERENCE"
+      },
+      {
+        "id": "C-02",
+        "name": "Remote Command Receiver / Handler",
+        "name_ko": "원격명령 수신, 처리부",
+        "role": "원격명령의 수신, 형식 확인, 해석 및 후속 처리 연결",
+        "component_type": "COMMAND_HANDLER",
+        "basis": "REFERENCE"
+      },
+      {
+        "id": "C-03",
+        "name": "Command Processing / Decision",
+        "name_ko": "명령 처리, 수락 판단부",
+        "role": "명령 수락 여부, 권한 문맥, freshness, 차량 상태 조건 등을 판단하는 논리적 기능",
+        "component_type": "COMMAND_DECISION",
+        "basis": "REFERENCE"
+      },
+      {
+        "id": "C-04",
+        "name": "Vehicle Gateway / Internal Routing",
+        "name_ko": "차량 Gateway / 내부 라우팅",
+        "role": "수락된 명령을 허용된 차량 내부 경로와 대상 기능으로 전달",
+        "component_type": "GATEWAY_ROUTER",
+        "basis": "REFERENCE"
+      },
+      {
+        "id": "C-05",
+        "name": "Target Function Controller",
+        "name_ko": "대상 기능 제어기",
+        "role": "원격명령 대상 차량 기능을 실제로 수행하는 논리적 제어기",
+        "component_type": "TARGET_CONTROLLER",
+        "basis": "REFERENCE"
+      }
+    ],
+    "connections": [
+      {
+        "source": "OE-01",
+        "target": "OE-02",
+        "relation": "REQUESTS_VIA",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "OE-02",
+        "target": "OE-03",
+        "relation": "SUBMITS_REMOTE_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "OE-04",
+        "target": "OE-03",
+        "relation": "PROVIDES_IDENTITY_OR_AUTH_CONTEXT",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Table 4"
+      },
+      {
+        "source": "OE-03",
+        "target": "OE-05",
+        "relation": "SENDS_TOWARD_VEHICLE",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "OE-05",
+        "target": "C-01",
+        "relation": "DELIVERS_EXTERNAL_REMOTE_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1"
+      },
+      {
+        "source": "C-01",
+        "target": "C-02",
+        "relation": "FORWARDS_RECEIVED_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "C-02",
+        "target": "C-03",
+        "relation": "PASSES_PARSED_COMMAND_FOR_DECISION",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "OE-06",
+        "target": "C-03",
+        "relation": "PROVIDES_VEHICLE_STATE_INPUT",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "C-03",
+        "target": "C-04",
+        "relation": "FORWARDS_ACCEPTED_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "C-04",
+        "target": "C-05",
+        "relation": "ROUTES_TO_TARGET_FUNCTION",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "OE-07",
+        "target": "ITEM-01",
+        "relation": "INTERACTS_FOR_DIAGNOSTIC_OR_SERVICE",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Table 4"
+      },
+      {
+        "source": "OE-08",
+        "target": "ITEM-01",
+        "relation": "INTERACTS_FOR_CHARGING",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Table 4"
+      }
+    ],
+    "external_interfaces": [
+      {
+        "id": "OE-01",
+        "name_en": "Authorized / Requesting User",
+        "name_ko": "정당한 사용자",
+        "interaction": "모바일 앱 또는 API client를 통해 원격 차량 기능을 요청한다.",
+        "classification": "외부"
+      },
+      {
+        "id": "OE-02",
+        "name_en": "Mobile App / API Client",
+        "name_ko": "모바일 앱 / API Client",
+        "interaction": "사용자 입력과 인증 문맥을 바탕으로 원격명령 요청을 생성한다.",
+        "classification": "외부"
+      },
+      {
+        "id": "OE-03",
+        "name_en": "Backend / Command Service",
+        "name_ko": "Backend / Command Service",
+        "interaction": "원격명령 요청을 처리하고 차량 측 통신 경로로 전달한다.",
+        "classification": "외부"
+      },
+      {
+        "id": "OE-04",
+        "name_en": "Identity / Credential Service",
+        "name_ko": "신원, 자격정보 서비스",
+        "interaction": "사용자 또는 서비스의 인증정보와 권한 문맥을 제공하거나 관리한다.",
+        "classification": "외부"
+      },
+      {
+        "id": "OE-05",
+        "name_en": "External Network Infrastructure",
+        "name_ko": "인터넷, 셀룰러, 메시징 인프라",
+        "interaction": "Backend와 차량 사이의 원격 통신을 제공한다.",
+        "classification": "외부"
+      },
+      {
+        "id": "OE-06",
+        "name_en": "Other Vehicle Items",
+        "name_ko": "다른 차량 Item",
+        "interaction": "속도, 기어, 점화, 충전 상태 등 원격명령 판단에 필요한 차량 상태를 제공할 수 있다.",
+        "classification": "차량 내 외부 Item"
+      },
+      {
+        "id": "OE-07",
+        "name_en": "Diagnostic / Service Environment",
+        "name_ko": "진단, 정비 환경",
+        "interaction": "진단, 정비, 재프로그래밍 과정에서 Item과 상호작용할 수 있다.",
+        "classification": "외부"
+      },
+      {
+        "id": "OE-08",
+        "name_en": "External Charging Infrastructure",
+        "name_ko": "외부 충전 인프라",
+        "interaction": "충전 기능과 관련해 차량과 상호작용할 수 있다.",
+        "classification": "외부"
+      }
+    ],
+    "note": "Logical reference architecture. Not an OEM-specific ECU/network topology."
+  },
+  "operational_environment_basis": "REFERENCE",
+  "behavior": {
+    "command_result_status": {
+      "status": "YES"
+    },
+    "state_used_in_command_acceptance": {
+      "status": "UNKNOWN",
+      "states": [],
+      "provider_component": null,
+      "decision_component": null
+    }
+  },
+  "assumptions": [],
+  "unknowns": [
+    "Whether vehicle state/operating conditions affect command acceptance."
+  ],
+  "derived_contexts": [
+    "INTERNAL_COMMAND_CHANNEL_OBSERVED",
+    "REMOTE_COMMAND_PRESENT",
+    "RESULT_STATUS_PRESENT",
+    "TARGET_CONTROLLER_OR_FW_OBSERVED"
+  ],
+  "context_basis": {
+    "REMOTE_COMMAND_PRESENT": "DERIVED_FROM_SELECTED_REMOTE_FUNCTIONS",
+    "INTERNAL_COMMAND_CHANNEL_OBSERVED": "REFERENCE_ARCHITECTURE",
+    "TARGET_CONTROLLER_OR_FW_OBSERVED": "REFERENCE_ARCHITECTURE",
+    "RESULT_STATUS_PRESENT": "USER_CONFIRMED"
+  }
+}

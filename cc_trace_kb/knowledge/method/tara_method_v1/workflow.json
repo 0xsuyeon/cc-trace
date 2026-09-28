@@ -1,0 +1,87 @@
+{
+  "schema_version": "tara-method-1.1",
+  "name": "Study workflow grounded in the Korean TARA manual and the final reference-item report",
+  "steps": [
+    {
+      "order": 0,
+      "id": "ITEM_DEFINITION",
+      "phase": "CONCEPT_PREPARATION",
+      "manual_section": "2.1",
+      "work_product": "WP-09-01"
+    },
+    {
+      "order": 1,
+      "id": "ASSET_IDENTIFICATION",
+      "phase": "CORE_TARA",
+      "manual_section": "3.1",
+      "work_products": [
+        "WP-15-01",
+        "WP-15-02"
+      ]
+    },
+    {
+      "order": 2,
+      "id": "THREAT_SCENARIO_IDENTIFICATION",
+      "phase": "CORE_TARA",
+      "manual_section": "3.2",
+      "work_product": "WP-15-03"
+    },
+    {
+      "order": 3,
+      "id": "IMPACT_RATING",
+      "phase": "CORE_TARA",
+      "manual_section": "3.3",
+      "work_product": "WP-15-04"
+    },
+    {
+      "order": 4,
+      "id": "ATTACK_PATH_ANALYSIS",
+      "phase": "CORE_TARA",
+      "manual_section": "3.4",
+      "work_product": "WP-15-05"
+    },
+    {
+      "order": 5,
+      "id": "ATTACK_FEASIBILITY_RATING",
+      "phase": "CORE_TARA",
+      "manual_section": "3.5",
+      "work_product": "WP-15-06"
+    },
+    {
+      "order": 6,
+      "id": "RISK_VALUE_DETERMINATION",
+      "phase": "CORE_TARA",
+      "manual_section": "3.6",
+      "work_product": "WP-15-07"
+    },
+    {
+      "order": 7,
+      "id": "RISK_TREATMENT_DECISION",
+      "phase": "CORE_TARA",
+      "manual_section": "3.7",
+      "work_product": "WP-15-08"
+    },
+    {
+      "order": 8,
+      "id": "CAL_DETERMINATION",
+      "phase": "CONCEPT_EXTENSION",
+      "manual_section": "3.8",
+      "work_product": "INFORMATIVE_ASSURANCE_CLASSIFICATION"
+    },
+    {
+      "order": 9,
+      "id": "CYBERSECURITY_GOAL_OR_CLAIM",
+      "phase": "CONCEPT_EXTENSION",
+      "manual_section": "3.8",
+      "work_products": [
+        "WP-09-03",
+        "WP-09-04",
+        "WP-09-05"
+      ]
+    }
+  ],
+  "notes": [
+    "ISO/SAE 21434 Clause 15 TARA ends with risk treatment; CAL and Goal/Claim are represented as concept-phase extensions used by this study/report.",
+    "The Korean manual notes that TARA modules are modular; the sequence above follows the manual/report workflow."
+  ]
+}

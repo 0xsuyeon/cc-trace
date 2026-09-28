@@ -1,0 +1,33 @@
+{
+  "rules": [
+    {
+      "intent": "ACCESS_CONTROL",
+      "activate_function": "IF-01"
+    },
+    {
+      "intent": "PROPULSION_MOBILITY",
+      "activate_function": "IF-02"
+    },
+    {
+      "intent": "CLOSURE_MECHANICAL_ACCESS",
+      "activate_function": "IF-03"
+    },
+    {
+      "intent": "THERMAL_COMFORT",
+      "activate_function": "IF-04"
+    },
+    {
+      "intent": "CHARGING_HV_BATTERY",
+      "activate_function": "IF-05"
+    },
+    {
+      "intent": "SIGNALING_VEHICLE_FINDING",
+      "activate_function": "IF-06"
+    },
+    {
+      "intent": "SECURITY_OPERATIONAL_MODE",
+      "activate_function": "IF-07"
+    }
+  ],
+  "activation_semantics": "A source fact must represent a command/control operation, not telemetry-only state, before it may activate an Item Function."
+}

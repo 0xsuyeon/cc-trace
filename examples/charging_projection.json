@@ -1,0 +1,9 @@
+{
+  "functions": [
+    "IF-05"
+  ],
+  "contexts": [
+    "REMOTE_COMMAND_PRESENT",
+    "RESULT_STATUS_PRESENT"
+  ]
+}

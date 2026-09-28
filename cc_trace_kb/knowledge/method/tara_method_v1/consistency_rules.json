@@ -1,0 +1,13 @@
+{
+  "rules": [
+    "Every threat references exactly one existing asset.",
+    "Every threat includes at least one compromised cybersecurity property.",
+    "Every threat has at least one attack path.",
+    "Every attack path score equals ET+SE+KoIC+WoO+Eq.",
+    "Every threat aggregate attack feasibility equals the highest feasibility of its linked attack paths.",
+    "Every risk value is recomputed from impact and aggregate attack feasibility.",
+    "Every treatment is recomputed from the adopted treatment policy.",
+    "Every REDUCE threat is covered by at least one cybersecurity goal.",
+    "Every RETAIN threat is covered by at least one cybersecurity claim."
+  ]
+}

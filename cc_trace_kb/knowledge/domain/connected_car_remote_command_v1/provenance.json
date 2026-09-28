@@ -1,0 +1,44 @@
+{
+  "canonical_source_report": {
+    "filename": "커넥티드카_TARA_정형분석_구현검증_통합보고서(5).docx",
+    "sha256": "cf839e770bd9bf0f31e187b052dbbbf60687e6680efdd5a8897d4d33eb2af635"
+  },
+  "method_source_manual": {
+    "filename": "ISOSAE 21434 기반 사이버보안 위협 분석 및 위협 평가 매뉴얼(2).pdf",
+    "sha256": "d64b849784d1b224170939830af86e95be35f92261cc17f4937f4994105b8ed4"
+  },
+  "extraction_policy": "Canonical values are extracted from the final report tables; normalized enum fields are stored alongside raw Korean source values. No product-specific values are inferred.",
+  "report_table_map": {
+    "assumptions": "표 3",
+    "operational_environment": "표 4",
+    "logical_components": "표 5",
+    "functions": "표 6",
+    "assets": "표 9",
+    "damage_scenarios": "표 10",
+    "threat_scenarios": "표 12",
+    "impact_ratings": "표 15",
+    "attack_paths": "표 17",
+    "threat_attack_path_mapping": "표 18",
+    "attack_feasibility": "표 21",
+    "threat_aggregate_feasibility": "표 22",
+    "risk_matrix": "표 24",
+    "risk_values": "표 25",
+    "treatments": "표 27",
+    "cal_matrix": "표 28",
+    "goal_cal": "표 29",
+    "goals": "표 31",
+    "claim": "표 32",
+    "consistency": "표 33"
+  },
+  "revision": "1.7",
+  "revision_notes": [
+    "Added reference architecture edges and explicit Item/OE boundary semantics.",
+    "Structured attack-path steps.",
+    "Added conditional damage-scope semantics for cross-cutting assets.",
+    "Added function→asset/function→damage domain relations.",
+    "Added method snapshots from final report for validator cross-checks.",
+    "No standalone defense/control catalog was invented because the canonical report does not provide a complete one.",
+    "v1.7 revalidated canonical data against the latest integrated report with 283/283 alignment checks.",
+    "Source-assisted instantiation hardening does not alter canonical TARA values."
+  ]
+}

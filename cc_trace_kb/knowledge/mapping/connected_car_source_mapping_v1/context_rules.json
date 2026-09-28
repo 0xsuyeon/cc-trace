@@ -1,0 +1,86 @@
+{
+  "contexts": [
+    {
+      "context": "REMOTE_COMMAND_PRESENT",
+      "status": "REFERENCE_RELEVANT",
+      "assets": [
+        "AS-08",
+        "AS-09"
+      ],
+      "threats": [
+        "TS-22",
+        "TS-23",
+        "TS-24",
+        "TS-25",
+        "TS-26",
+        "TS-27",
+        "TS-28",
+        "TS-29"
+      ]
+    },
+    {
+      "context": "RESULT_STATUS_PRESENT",
+      "status": "CANDIDATE",
+      "assets": [
+        "AS-10"
+      ],
+      "threats": [
+        "TS-30",
+        "TS-31",
+        "TS-32",
+        "TS-33",
+        "TS-34"
+      ]
+    },
+    {
+      "context": "INTERNAL_COMMAND_CHANNEL_OBSERVED",
+      "status": "CANDIDATE",
+      "assets": [
+        "AS-11"
+      ],
+      "threats": [
+        "TS-35",
+        "TS-36",
+        "TS-37"
+      ]
+    },
+    {
+      "context": "TARGET_CONTROLLER_OR_FW_OBSERVED",
+      "status": "CANDIDATE",
+      "assets": [
+        "AS-12"
+      ],
+      "threats": [
+        "TS-38",
+        "TS-39",
+        "TS-40"
+      ]
+    },
+    {
+      "context": "STATE_USED_IN_COMMAND_ACCEPTANCE",
+      "status": "CONFIRMED_CONTEXT",
+      "assets": [
+        "AS-13"
+      ],
+      "threats": [
+        "TS-41",
+        "TS-42",
+        "TS-43"
+      ]
+    },
+    {
+      "context": "STATE_TELEMETRY_ONLY",
+      "status": "NO_STATE_THREAT_ACTIVATION",
+      "assets": [],
+      "threats": []
+    }
+  ],
+  "note": "A state variable merely being read is insufficient. AS-13/TS-41~43 require evidence that state influences remote-command acceptance.",
+  "applicability_statuses": {
+    "CONFIRMED": "Directly supported by accepted source/system facts.",
+    "CANDIDATE": "Plausibly relevant but requires more evidence.",
+    "REFERENCE_RELEVANT": "Relevant in the canonical reference model; not observed as a target-product fact.",
+    "UNKNOWN": "Insufficient evidence.",
+    "NOT_APPLICABLE": "Evidence supports exclusion."
+  }
+}

@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use CC-TRACE in academic work, please cite this software."
+title: "CC-TRACE"
+type: software
+authors:
+  - family-names: "Jeon"
+    given-names: "Suyeon"
+repository-code: "https://github.com/0xsuyeon/cc-trace"
+license: "Apache-2.0"
+abstract: "ISO/SAE 21434-based TARA analysis for connected-car remote vehicle functions using source evidence, analyst input, and a deterministic reference knowledge base."

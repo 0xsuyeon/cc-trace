@@ -1,0 +1,157 @@
+{
+  "formula": "ET + SE + KoIC + WoO + Eq",
+  "factors": {
+    "ET": {
+      "label": "Elapsed Time",
+      "values": [
+        {
+          "label": "<=1 day",
+          "score": 0
+        },
+        {
+          "label": "<=1 week",
+          "score": 1
+        },
+        {
+          "label": "<=1 month",
+          "score": 4
+        },
+        {
+          "label": "<=6 months",
+          "score": 17
+        },
+        {
+          "label": ">6 months",
+          "score": 19
+        }
+      ]
+    },
+    "SE": {
+      "label": "Specialist Expertise",
+      "values": [
+        {
+          "label": "Layman",
+          "score": 0
+        },
+        {
+          "label": "Proficient",
+          "score": 3
+        },
+        {
+          "label": "Expert",
+          "score": 6
+        },
+        {
+          "label": "Multiple experts",
+          "score": 8
+        }
+      ]
+    },
+    "KoIC": {
+      "label": "Knowledge of Item or Component",
+      "values": [
+        {
+          "label": "Public",
+          "score": 0
+        },
+        {
+          "label": "Restricted",
+          "score": 3
+        },
+        {
+          "label": "Confidential",
+          "score": 7
+        },
+        {
+          "label": "Strictly confidential",
+          "score": 11
+        }
+      ]
+    },
+    "WoO": {
+      "label": "Window of Opportunity",
+      "values": [
+        {
+          "label": "Unlimited",
+          "score": 0
+        },
+        {
+          "label": "Easy",
+          "score": 1
+        },
+        {
+          "label": "Moderate",
+          "score": 4
+        },
+        {
+          "label": "Difficult/None",
+          "score": 10
+        }
+      ]
+    },
+    "Eq": {
+      "label": "Equipment",
+      "values": [
+        {
+          "label": "Standard",
+          "score": 0
+        },
+        {
+          "label": "Specialized",
+          "score": 4
+        },
+        {
+          "label": "Bespoke",
+          "score": 7
+        },
+        {
+          "label": "Multiple bespoke",
+          "score": 9
+        }
+      ]
+    }
+  },
+  "score_to_feasibility": [
+    {
+      "min": 0,
+      "max": 13,
+      "rating": "HIGH"
+    },
+    {
+      "min": 14,
+      "max": 19,
+      "rating": "MEDIUM"
+    },
+    {
+      "min": 20,
+      "max": 24,
+      "rating": "LOW"
+    },
+    {
+      "min": 25,
+      "max": null,
+      "rating": "VERY_LOW"
+    }
+  ],
+  "source": {
+    "manual_section": "3.5",
+    "iso_basis": "ISO/SAE 21434 Annex G attack-potential example"
+  },
+  "source_note": "The Korean manual contains an earlier prose/table line showing 'multiple bespoke' as 11, while its Table 22 aggregation row and ISO/SAE 21434 Annex G Table G.6 use 9. The final report and this KB use 9. Current AP-01..AP-16 use equipment scores 0 or 4, so this discrepancy does not affect current report results.",
+  "schema_version": "tara-attack-feasibility-method-1.2",
+  "selected_method": "ATTACK_POTENTIAL",
+  "selected_by_reference_tara": true,
+  "manual_alternatives": [
+    {
+      "method": "CVSS_BASED",
+      "implemented": false,
+      "used_by_reference_tara": false
+    },
+    {
+      "method": "ATTACK_VECTOR_BASED",
+      "implemented": false,
+      "used_by_reference_tara": false
+    }
+  ],
+  "selection_note": "The Korean manual describes multiple approaches. The final reference TARA explicitly uses the Attack Potential approach, so this KB implements that branch only."
+}

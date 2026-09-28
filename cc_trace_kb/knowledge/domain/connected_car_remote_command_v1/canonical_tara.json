@@ -1,0 +1,5371 @@
+{
+  "schema_version": "connected-car-remote-command-canonical-tara-1",
+  "scope": {
+    "item_id": "ITEM-01",
+    "name": "Connected-Car Remote Vehicle Function Control Item",
+    "analysis_type": "GENERIC_REFERENCE",
+    "statement": "Specific OEM production architecture/compliance is not claimed; unknown internals remain assumptions/reference abstractions."
+  },
+  "assumptions": [
+    {
+      "id": "A-01",
+      "statement": "본 분석의 Item은 특정 OEM 또는 특정 차종의 양산 아키텍처가 아니라 공개된 connected-car client/SDK에서 관찰된 원격명령 기능을 바탕으로 구성한 generic/reference Item이다."
+    },
+    {
+      "id": "A-02",
+      "statement": "공개 client 코드에서 확인할 수 없는 backend-side authorization, rate limiting, MFA, key protection 등의 존재 또는 부재를 사실로 단정하지 않는다."
+    },
+    {
+      "id": "A-03",
+      "statement": "실제 ECU 배치, CAN/Ethernet topology, gateway 구성은 공개 근거가 없는 경우 논리적 컴포넌트로만 표현한다."
+    },
+    {
+      "id": "A-04",
+      "statement": "특정 OEM에서 관찰된 보안통제가 다른 OEM 또는 본 reference Item 전체에 공통으로 존재한다고 가정하지 않는다."
+    },
+    {
+      "id": "A-05",
+      "statement": "속도, 기어, 점화, 충전 상태 등의 state interlock은 해당 구현에서 실제로 사용하는 조건일 때 적용된다."
+    },
+    {
+      "id": "A-06",
+      "statement": "원격명령 command가 공개 client/SDK에 존재한다는 사실은 해당 명령이 모든 차종과 지역에서 동일하게 서비스된다는 뜻이 아니다."
+    },
+    {
+      "id": "A-07",
+      "statement": "Cloud 또는 client 관찰 결과만으로 차량 내부의 구체적인 ECU, 키 저장 방식, 메시지 보호 방식까지 역추론하지 않는다."
+    }
+  ],
+  "operational_environment": [
+    {
+      "id": "OE-01",
+      "name_en": "Authorized / Requesting User",
+      "name_ko": "정당한 사용자",
+      "interaction": "모바일 앱 또는 API client를 통해 원격 차량 기능을 요청한다.",
+      "classification": "외부"
+    },
+    {
+      "id": "OE-02",
+      "name_en": "Mobile App / API Client",
+      "name_ko": "모바일 앱 / API Client",
+      "interaction": "사용자 입력과 인증 문맥을 바탕으로 원격명령 요청을 생성한다.",
+      "classification": "외부"
+    },
+    {
+      "id": "OE-03",
+      "name_en": "Backend / Command Service",
+      "name_ko": "Backend / Command Service",
+      "interaction": "원격명령 요청을 처리하고 차량 측 통신 경로로 전달한다.",
+      "classification": "외부"
+    },
+    {
+      "id": "OE-04",
+      "name_en": "Identity / Credential Service",
+      "name_ko": "신원, 자격정보 서비스",
+      "interaction": "사용자 또는 서비스의 인증정보와 권한 문맥을 제공하거나 관리한다.",
+      "classification": "외부"
+    },
+    {
+      "id": "OE-05",
+      "name_en": "External Network Infrastructure",
+      "name_ko": "인터넷, 셀룰러, 메시징 인프라",
+      "interaction": "Backend와 차량 사이의 원격 통신을 제공한다.",
+      "classification": "외부"
+    },
+    {
+      "id": "OE-06",
+      "name_en": "Other Vehicle Items",
+      "name_ko": "다른 차량 Item",
+      "interaction": "속도, 기어, 점화, 충전 상태 등 원격명령 판단에 필요한 차량 상태를 제공할 수 있다.",
+      "classification": "차량 내 외부 Item"
+    },
+    {
+      "id": "OE-07",
+      "name_en": "Diagnostic / Service Environment",
+      "name_ko": "진단, 정비 환경",
+      "interaction": "진단, 정비, 재프로그래밍 과정에서 Item과 상호작용할 수 있다.",
+      "classification": "외부"
+    },
+    {
+      "id": "OE-08",
+      "name_en": "External Charging Infrastructure",
+      "name_ko": "외부 충전 인프라",
+      "interaction": "충전 기능과 관련해 차량과 상호작용할 수 있다.",
+      "classification": "외부"
+    }
+  ],
+  "logical_components": [
+    {
+      "id": "C-01",
+      "name_en": "Vehicle External Communication Endpoint",
+      "name_ko": "차량 외부 통신 종단점",
+      "role": "외부 원격명령을 차량 E/E 영역에서 처음 수신하는 논리적 종단점"
+    },
+    {
+      "id": "C-02",
+      "name_en": "Remote Command Receiver / Handler",
+      "name_ko": "원격명령 수신, 처리부",
+      "role": "원격명령의 수신, 형식 확인, 해석 및 후속 처리 연결"
+    },
+    {
+      "id": "C-03",
+      "name_en": "Command Processing / Decision",
+      "name_ko": "명령 처리, 수락 판단부",
+      "role": "명령 수락 여부, 권한 문맥, freshness, 차량 상태 조건 등을 판단하는 논리적 기능"
+    },
+    {
+      "id": "C-04",
+      "name_en": "Vehicle Gateway / Internal Routing",
+      "name_ko": "차량 Gateway / 내부 라우팅",
+      "role": "수락된 명령을 허용된 차량 내부 경로와 대상 기능으로 전달"
+    },
+    {
+      "id": "C-05",
+      "name_en": "Target Function Controller",
+      "name_ko": "대상 기능 제어기",
+      "role": "원격명령 대상 차량 기능을 실제로 수행하는 논리적 제어기"
+    }
+  ],
+  "functions": [
+    {
+      "id": "IF-01",
+      "name_en": "Vehicle Access Control",
+      "name_ko": "차량 접근 제어",
+      "description": "원격 요청에 따라 차량 도어의 잠금 또는 잠금 해제 상태를 변경한다.",
+      "cybersecurity_relevant": true
+    },
+    {
+      "id": "IF-02",
+      "name_en": "Propulsion and Mobility Authorization",
+      "name_ko": "원동기 및 주행 권한 제어",
+      "description": "원격 요청에 따라 차량의 원동기 작동, 정지 또는 원격 주행 가능 상태를 제어한다.",
+      "cybersecurity_relevant": true
+    },
+    {
+      "id": "IF-03",
+      "name_en": "Closure and Mechanical Access Control",
+      "name_ko": "개구부 및 기계적 접근 제어",
+      "description": "원격 요청에 따라 창문, 선루프, 트렁크, 프렁크, 적재함 덮개, 충전구 등 전동식 개구부의 상태를 변경한다.",
+      "cybersecurity_relevant": true
+    },
+    {
+      "id": "IF-04",
+      "name_en": "Cabin Thermal and Comfort Control",
+      "name_ko": "실내 열, 공조 및 편의 기능 제어",
+      "description": "원격 요청에 따라 차량 실내 공조, 보조 난방, 유리 열선, 좌석 및 스티어링 휠 난방 등의 열, 편의 기능을 제어한다.",
+      "cybersecurity_relevant": true
+    },
+    {
+      "id": "IF-05",
+      "name_en": "Charging and HV Battery Energy Management",
+      "name_ko": "충전 및 고전압 배터리 에너지 관리",
+      "description": "원격 요청에 따라 충전 시작, 정지, 충전 전류, 한도 및 고전압 배터리 컨디셔닝 상태를 제어한다.",
+      "cybersecurity_relevant": true
+    },
+    {
+      "id": "IF-06",
+      "name_en": "Audible/Visual Signaling and Vehicle Finding",
+      "name_ko": "가청, 시각 신호 및 차량 탐색",
+      "description": "원격 요청에 따라 경적, 등화 및 비상등 등의 신호를 작동해 차량 상태 표시 또는 차량 위치 식별을 지원한다.",
+      "cybersecurity_relevant": true
+    },
+    {
+      "id": "IF-07",
+      "name_en": "Vehicle Security and Operational Mode Control",
+      "name_ko": "차량 보안 및 운용 모드 제어",
+      "description": "원격 요청에 따라 차량의 보안 또는 제한 운용 모드를 활성화하거나 비활성화한다.",
+      "cybersecurity_relevant": true
+    }
+  ],
+  "assets": [
+    {
+      "id": "AS-01",
+      "name": "차량 접근제어 원격명령 데이터 및 제어정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-01, DS-02",
+      "damage_ids_expanded": [
+        "DS-01",
+        "DS-02"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-01",
+          "DS-02"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-02",
+      "name": "원동기, 주행 권한 관련 원격명령 데이터 및 제어정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-03, DS-04",
+      "damage_ids_expanded": [
+        "DS-03",
+        "DS-04"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-03",
+          "DS-04"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-03",
+      "name": "개구부, 기계 구동 원격명령 데이터 및 제어정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-05, DS-06, DS-07",
+      "damage_ids_expanded": [
+        "DS-05",
+        "DS-06",
+        "DS-07"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-05",
+          "DS-06",
+          "DS-07"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-04",
+      "name": "열, 공조, 편의 원격명령 데이터 및 제어정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-08, DS-09",
+      "damage_ids_expanded": [
+        "DS-08",
+        "DS-09"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-08",
+          "DS-09"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-05",
+      "name": "충전, 고전압 배터리 관리 원격명령 데이터 및 제어정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-10, DS-11",
+      "damage_ids_expanded": [
+        "DS-10",
+        "DS-11"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-10",
+          "DS-11"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-06",
+      "name": "가청, 시각 신호 및 차량찾기 원격명령 데이터",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-12, DS-13",
+      "damage_ids_expanded": [
+        "DS-12",
+        "DS-13"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-12",
+          "DS-13"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-07",
+      "name": "차량 보안, 운용모드 원격명령 데이터 및 모드 제어정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-14, DS-15",
+      "damage_ids_expanded": [
+        "DS-14",
+        "DS-15"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-14",
+          "DS-15"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-08",
+      "name": "명령의 대상 차량, 대상 기능 결합 및 내부 라우팅 정보",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-01~DS-15 중 해당 기능 피해",
+      "damage_ids_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "damage_scope": {
+        "type": "FUNCTION_CONDITIONAL_SUBSET",
+        "candidate_ids": [
+          "DS-01",
+          "DS-02",
+          "DS-03",
+          "DS-04",
+          "DS-05",
+          "DS-06",
+          "DS-07",
+          "DS-08",
+          "DS-09",
+          "DS-10",
+          "DS-11",
+          "DS-12",
+          "DS-13",
+          "DS-14",
+          "DS-15"
+        ],
+        "condition": "Only damage scenarios corresponding to active/applicable vehicle functions."
+      }
+    },
+    {
+      "id": "AS-09",
+      "name": "차량 측 원격명령 수신, 해석, 수락, 거부 처리 상태 및 로직",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-01~DS-15 중 해당 기능 피해",
+      "damage_ids_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "damage_scope": {
+        "type": "FUNCTION_CONDITIONAL_SUBSET",
+        "candidate_ids": [
+          "DS-01",
+          "DS-02",
+          "DS-03",
+          "DS-04",
+          "DS-05",
+          "DS-06",
+          "DS-07",
+          "DS-08",
+          "DS-09",
+          "DS-10",
+          "DS-11",
+          "DS-12",
+          "DS-13",
+          "DS-14",
+          "DS-15"
+        ],
+        "condition": "Only damage scenarios corresponding to active/applicable vehicle functions."
+      }
+    },
+    {
+      "id": "AS-10",
+      "name": "원격명령 실행 결과, 상태 및 거래 메타데이터",
+      "properties": [
+        "CONFIDENTIALITY",
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-16, DS-17",
+      "damage_ids_expanded": [
+        "DS-16",
+        "DS-17"
+      ],
+      "damage_scope": {
+        "type": "EXPLICIT",
+        "candidate_ids": [
+          "DS-16",
+          "DS-17"
+        ],
+        "condition": null
+      }
+    },
+    {
+      "id": "AS-11",
+      "name": "차량 내부에서 수락된 명령을 대상 제어기로 전달하는 통신 데이터",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-01~DS-15 중 해당 기능 피해",
+      "damage_ids_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "damage_scope": {
+        "type": "FUNCTION_CONDITIONAL_SUBSET",
+        "candidate_ids": [
+          "DS-01",
+          "DS-02",
+          "DS-03",
+          "DS-04",
+          "DS-05",
+          "DS-06",
+          "DS-07",
+          "DS-08",
+          "DS-09",
+          "DS-10",
+          "DS-11",
+          "DS-12",
+          "DS-13",
+          "DS-14",
+          "DS-15"
+        ],
+        "condition": "Only damage scenarios corresponding to active/applicable vehicle functions."
+      }
+    },
+    {
+      "id": "AS-12",
+      "name": "원격명령 대상 차량 기능을 구현하는 제어 SW/FW",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-01~DS-15 중 해당 기능 피해",
+      "damage_ids_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "damage_scope": {
+        "type": "FUNCTION_CONDITIONAL_SUBSET",
+        "candidate_ids": [
+          "DS-01",
+          "DS-02",
+          "DS-03",
+          "DS-04",
+          "DS-05",
+          "DS-06",
+          "DS-07",
+          "DS-08",
+          "DS-09",
+          "DS-10",
+          "DS-11",
+          "DS-12",
+          "DS-13",
+          "DS-14",
+          "DS-15"
+        ],
+        "condition": "Only damage scenarios corresponding to active/applicable vehicle functions."
+      }
+    },
+    {
+      "id": "AS-13",
+      "name": "원격명령 처리 판단에 사용되는 차량 상태, 운용조건 입력 데이터",
+      "properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "damage_scope_raw": "DS-01~DS-15 중 상태 조건에 의존하는 피해",
+      "damage_ids_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "damage_scope": {
+        "type": "STATE_CONDITIONAL_SUBSET",
+        "candidate_ids": [
+          "DS-01",
+          "DS-02",
+          "DS-03",
+          "DS-04",
+          "DS-05",
+          "DS-06",
+          "DS-07",
+          "DS-08",
+          "DS-09",
+          "DS-10",
+          "DS-11",
+          "DS-12",
+          "DS-13",
+          "DS-14",
+          "DS-15"
+        ],
+        "condition": "Only damage scenarios whose command acceptance depends on vehicle-state/operating-condition inputs."
+      }
+    }
+  ],
+  "damage_scenarios": [
+    {
+      "id": "DS-01",
+      "statement": "차량의 잠금 상태가 정당한 사용자의 의도와 다르게 변경되어 차량 또는 차량 내 물품에 대한 비인가 물리적 접근이 가능해진다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "보통의",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "비인가 물리적 접근 가능성은 접근제어 기능의 손상으로 보며, 일반적인 reference 평가에서는 제한적인 재산상 영향과 부분 기능 저하를 반영한다."
+    },
+    {
+      "id": "DS-02",
+      "statement": "정당한 사용자가 필요한 시점에 차량의 잠금/해제 상태를 원격으로 변경하지 못해 정상적인 차량 접근 또는 차량 보호 기능을 이용하지 못한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "원격 잠금, 해제 기능을 사용할 수 없는 상태로, 직접적인 상해나 개인정보 노출보다 기능 저하가 중심이다."
+    },
+    {
+      "id": "DS-03",
+      "statement": "원동기 작동 또는 원격 주행 가능 상태가 의도하지 않게 활성화되어 차량이 사용자의 의도와 다른 동작 가능 상태가 되고, 조건에 따라 차량 또는 도로 사용자에게 위해가 발생할 수 있다.",
+      "impact": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "주요한",
+          "financial": "보통의",
+          "operational": "심각한",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "원동기, 주행 가능 상태의 의도치 않은 활성화는 심각한 상해 가능성을 배제할 수 없고 core vehicle function의 비정상 동작에 해당한다."
+    },
+    {
+      "id": "DS-04",
+      "statement": "원동기 또는 주행 관련 상태가 의도하지 않게 중지, 비활성화되거나 필요한 기능을 사용할 수 없어 차량 이동성이 상실되며, 운행 조건에 따라 도로 사용자에게 위해가 발생할 수 있다.",
+      "impact": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "주요한",
+          "financial": "보통의",
+          "operational": "심각한",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "원동기, 주행 기능의 의도치 않은 상실은 심각한 상해 가능성과 core mobility 기능 상실을 수반할 수 있다."
+    },
+    {
+      "id": "DS-05",
+      "statement": "창문, 선루프, 트렁크, 프렁크, 충전구 등의 개구부가 의도하지 않게 열리거나 열린 상태가 되어 차량 내부 또는 적재물의 보호가 저하된다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "보통의",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "개구부 보호 저하로 제한적인 재산상 영향과 부분 기능 저하가 발생할 수 있으나 현재 시나리오 자체에 신체 상해는 포함하지 않는다."
+    },
+    {
+      "id": "DS-06",
+      "statement": "전동 개구부가 의도하지 않은 시점에 닫히거나 움직여 주변 사람 또는 물체와 충돌, 끼임이 발생할 수 있다.",
+      "impact": {
+        "safety": "MODERATE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "보통의",
+          "financial": "보통의",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "전동 개구부의 비정상 동작은 일반적으로 경상 또는 중등도 상해 가능성을 고려하며, 부분 기능 저하와 제한적 비용을 동반할 수 있다."
+    },
+    {
+      "id": "DS-07",
+      "statement": "정당한 사용자가 필요한 개구부를 원격으로 조작하지 못하여 차량을 정상적으로 사용하거나 보호하지 못한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "정상 원격 개구부 기능 사용 불가가 주된 영향이다."
+    },
+    {
+      "id": "DS-08",
+      "statement": "공조, 보조난방, 유리열선, 좌석, 스티어링 난방 등이 의도하지 않게 작동하거나 설정되어 불필요한 에너지 소비 또는 의도하지 않은 실내 열환경이 발생한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "보통의",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "의도하지 않은 공조, 난방 동작으로 제한적인 에너지 비용과 부분 기능 저하가 발생할 수 있다."
+    },
+    {
+      "id": "DS-09",
+      "statement": "필요한 원격 열, 공조 기능을 사용할 수 없어 사전 공조 또는 관련 편의 기능을 정상적으로 이용하지 못한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "편의 기능의 원격 사용 불가로 부분적인 운용 저하가 발생한다."
+    },
+    {
+      "id": "DS-10",
+      "statement": "충전이 의도하지 않게 중지되거나 충전 한도가 감소하거나 충전 제어가 불가능하여 필요한 시점에 충분한 배터리 충전량을 확보하지 못하고 차량의 이용 가능성이 저하된다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MAJOR",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "보통의",
+          "operational": "주요한",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "필요한 충전량을 확보하지 못하면 차량 이용 가능성이 상당히 저하되며 추가 비용이 발생할 수 있다."
+    },
+    {
+      "id": "DS-11",
+      "statement": "충전이 의도하지 않게 시작되거나 충전 전류, 한도 등이 변경되어 사용자가 의도하지 않은 에너지 소비 또는 비용이 발생한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "보통의",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "비인가 충전 또는 충전 설정 변경으로 제한적인 경제손실과 부분 운용 저하가 발생할 수 있다."
+    },
+    {
+      "id": "DS-12",
+      "statement": "경적, 등화, 비상등 등의 외부 신호가 의도하지 않게 작동하여 차량 주변 사람 또는 다른 도로 사용자에게 잘못된 신호를 제공하거나 주의를 분산시킨다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "현재 피해 정의는 잘못된 외부 신호와 주의분산까지이며 충돌, 상해를 직접 포함하지 않는다."
+    },
+    {
+      "id": "DS-13",
+      "statement": "차량 찾기 또는 원격 신호 기능을 필요한 시점에 사용할 수 없어 사용자가 차량을 원격으로 식별하거나 관련 편의 기능을 사용할 수 없다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "차량찾기 및 원격 신호 기능의 사용 불가가 주된 영향이다."
+    },
+    {
+      "id": "DS-14",
+      "statement": "차량의 보호 또는 제한 운용 모드가 의도하지 않게 해제되어 차량의 도난 억제, 사용 제한 효과가 감소하고 차량이 허용되지 않은 방식으로 사용될 가능성이 증가한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "보통의",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "보호, 제한 기능 저하는 제한적인 재산상 영향과 부분 기능 저하로 평가한다."
+    },
+    {
+      "id": "DS-15",
+      "statement": "보호 또는 제한 운용 모드가 의도하지 않게 활성화되거나 해제할 수 없게 되어 정당한 사용자의 차량 이용이 제한된다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "정당한 사용자의 차량 이용 제한이 중심이며 core vehicle function 상실로 확대하지 않는다."
+    },
+    {
+      "id": "DS-16",
+      "statement": "원격명령의 실제 처리 결과와 사용자에게 제공되는 결과, 상태가 일치하지 않거나 결과를 확인할 수 없어 사용자가 차량 상태를 잘못 판단하거나 불필요하게 명령을 반복한다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "보통의",
+          "privacy": "무시할 수 있는"
+        }
+      },
+      "rationale": "실행 결과와 보고 상태의 불일치는 사용자의 판단과 원격 기능 운용을 저하시킨다."
+    },
+    {
+      "id": "DS-17",
+      "statement": "차량 식별정보와 원격명령 종류, 처리 기록 등 거래 메타데이터가 권한 없는 주체에게 노출되어 차량과 사용자의 관계 또는 차량 이용 행태가 노출된다.",
+      "impact": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "NEGLIGIBLE",
+        "privacy": "MODERATE",
+        "raw": {
+          "safety": "무시할 수 있는",
+          "financial": "무시할 수 있는",
+          "operational": "무시할 수 있는",
+          "privacy": "보통의"
+        }
+      },
+      "rationale": "거래 메타데이터가 사용자 계정과 연결될 수 있다는 reference assumption 아래 이용행태 정보 노출을 Moderate로 평가한다."
+    }
+  ],
+  "threat_scenarios": [
+    {
+      "id": "TS-01",
+      "asset_id": "AS-01",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 원격 접근제어 명령으로 위장한 명령이 처리되어 차량 접근제어 명령 데이터의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-01",
+      "damage_scope_expanded": [
+        "DS-01"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-01"
+    },
+    {
+      "id": "TS-02",
+      "asset_id": "AS-01",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "정상적인 잠금, 해제 명령의 동작 종류, 대상 또는 관련 제어정보가 변경되어 접근제어 명령 데이터의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-01",
+      "damage_scope_expanded": [
+        "DS-01"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-02"
+    },
+    {
+      "id": "TS-03",
+      "asset_id": "AS-01",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "차량 접근제어 원격명령이 차단, 손실, 처리 불가 상태가 되어 접근제어 기능의 가용성이 손상된다.",
+      "damage_scope_raw": "DS-02",
+      "damage_scope_expanded": [
+        "DS-02"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-03"
+    },
+    {
+      "id": "TS-04",
+      "asset_id": "AS-02",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "원동기, 주행 관련 정당한 명령으로 위장한 명령이 처리되어 원동기, 주행 관련 명령 데이터의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-03, DS-04",
+      "damage_scope_expanded": [
+        "DS-03",
+        "DS-04"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-04"
+    },
+    {
+      "id": "TS-05",
+      "asset_id": "AS-02",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "원동기, 주행 명령의 종류 또는 파라미터가 변경되어 의도한 명령과 다른 동작이 수행될 수 있도록 무결성이 손상된다.",
+      "damage_scope_raw": "DS-03, DS-04",
+      "damage_scope_expanded": [
+        "DS-03",
+        "DS-04"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-05"
+    },
+    {
+      "id": "TS-06",
+      "asset_id": "AS-02",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "원동기, 주행 관련 원격명령의 전달 또는 처리가 불가능해져 해당 원격 기능의 가용성이 손상된다.",
+      "damage_scope_raw": "DS-04",
+      "damage_scope_expanded": [
+        "DS-04"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-06"
+    },
+    {
+      "id": "TS-07",
+      "asset_id": "AS-03",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 개구부 제어 명령으로 위장한 명령이 처리되어 창문, 선루프, 트렁크 등 개구부 명령의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-05, DS-06",
+      "damage_scope_expanded": [
+        "DS-05",
+        "DS-06"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-07"
+    },
+    {
+      "id": "TS-08",
+      "asset_id": "AS-03",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "개구부 명령의 방향, 대상 또는 파라미터가 변경되어 의도하지 않은 개폐 동작이 발생할 수 있도록 무결성이 손상된다.",
+      "damage_scope_raw": "DS-05, DS-06",
+      "damage_scope_expanded": [
+        "DS-05",
+        "DS-06"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-08"
+    },
+    {
+      "id": "TS-09",
+      "asset_id": "AS-03",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "개구부 원격제어 명령이 차단 또는 처리되지 않아 정당한 사용자가 필요한 기능을 사용할 수 없게 된다.",
+      "damage_scope_raw": "DS-07",
+      "damage_scope_expanded": [
+        "DS-07"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-09"
+    },
+    {
+      "id": "TS-10",
+      "asset_id": "AS-04",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 열, 공조 명령으로 위장한 명령이 처리되어 공조 및 편의 제어정보의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-08",
+      "damage_scope_expanded": [
+        "DS-08"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-10"
+    },
+    {
+      "id": "TS-11",
+      "asset_id": "AS-04",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "온도, 작동상태 또는 대상 편의기능 등의 명령 정보가 변경되어 사용자의 의도와 다른 열, 공조 동작이 발생한다.",
+      "damage_scope_raw": "DS-08",
+      "damage_scope_expanded": [
+        "DS-08"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-11"
+    },
+    {
+      "id": "TS-12",
+      "asset_id": "AS-04",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "공조, 난방, 열선 등의 원격제어가 불가능해져 해당 편의기능의 가용성이 손상된다.",
+      "damage_scope_raw": "DS-09",
+      "damage_scope_expanded": [
+        "DS-09"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-12"
+    },
+    {
+      "id": "TS-13",
+      "asset_id": "AS-05",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 충전, 고전압 배터리 관련 명령으로 위장한 명령이 처리되어 에너지 관리 명령의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-10, DS-11",
+      "damage_scope_expanded": [
+        "DS-10",
+        "DS-11"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-13"
+    },
+    {
+      "id": "TS-14",
+      "asset_id": "AS-05",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "충전 시작, 정지, 전류 또는 충전한도 등의 제어정보가 변경되어 사용자의 의도와 다른 충전 동작이 발생한다.",
+      "damage_scope_raw": "DS-10, DS-11",
+      "damage_scope_expanded": [
+        "DS-10",
+        "DS-11"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-14"
+    },
+    {
+      "id": "TS-15",
+      "asset_id": "AS-05",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "원격 충전 제어가 차단 또는 처리 불가 상태가 되어 필요한 충전 기능을 사용할 수 없게 된다.",
+      "damage_scope_raw": "DS-10",
+      "damage_scope_expanded": [
+        "DS-10"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-15"
+    },
+    {
+      "id": "TS-16",
+      "asset_id": "AS-06",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 경적, 등화, 차량찾기 명령으로 위장한 명령이 처리되어 신호 제어정보의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-12",
+      "damage_scope_expanded": [
+        "DS-12"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-16"
+    },
+    {
+      "id": "TS-17",
+      "asset_id": "AS-06",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "신호 종류, 대상 또는 동작정보가 변경되어 사용자의 의도와 다른 시각, 가청 신호가 발생한다.",
+      "damage_scope_raw": "DS-12",
+      "damage_scope_expanded": [
+        "DS-12"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-17"
+    },
+    {
+      "id": "TS-18",
+      "asset_id": "AS-06",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "차량찾기 또는 신호 기능의 원격명령을 처리할 수 없어 해당 기능의 가용성이 손상된다.",
+      "damage_scope_raw": "DS-13",
+      "damage_scope_expanded": [
+        "DS-13"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-18"
+    },
+    {
+      "id": "TS-19",
+      "asset_id": "AS-07",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 보안, 운용모드 명령으로 위장한 명령이 처리되어 해당 모드 제어정보의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-14, DS-15",
+      "damage_scope_expanded": [
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-03",
+        "AP-06",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-19"
+    },
+    {
+      "id": "TS-20",
+      "asset_id": "AS-07",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "보안 또는 제한 운용모드 활성, 비활성 정보가 변경되어 의도하지 않은 모드 전환이 발생한다.",
+      "damage_scope_raw": "DS-14, DS-15",
+      "damage_scope_expanded": [
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-03",
+        "AP-05",
+        "AP-06",
+        "AP-10",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-20"
+    },
+    {
+      "id": "TS-21",
+      "asset_id": "AS-07",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "보안 또는 제한 운용모드에 대한 정당한 원격제어가 불가능해져 해당 기능의 가용성이 손상된다.",
+      "damage_scope_raw": "DS-15",
+      "damage_scope_expanded": [
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-21"
+    },
+    {
+      "id": "TS-22",
+      "asset_id": "AS-08",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "다른 차량 또는 기능을 정당한 명령 대상으로 위장하여 명령과 실제 대상 간 결합의 무결성이 손상된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-02",
+        "AP-03",
+        "AP-10"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-02",
+        "AP-03",
+        "AP-10"
+      ],
+      "risk_record_id": "TS-22"
+    },
+    {
+      "id": "TS-23",
+      "asset_id": "AS-08",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "명령의 대상 차량, 대상 기능 또는 내부 라우팅 정보가 변경되어 의도하지 않은 대상에 명령이 적용된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-02",
+        "AP-03",
+        "AP-05",
+        "AP-10"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-02",
+        "AP-03",
+        "AP-05",
+        "AP-10"
+      ],
+      "risk_record_id": "TS-23"
+    },
+    {
+      "id": "TS-24",
+      "asset_id": "AS-08",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "대상 식별 또는 내부 라우팅 정보를 사용할 수 없어 정당한 명령을 대상 기능에 전달하지 못한다.",
+      "damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "damage_scope_expanded": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-11",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-11",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-24"
+    },
+    {
+      "id": "TS-25",
+      "asset_id": "AS-09",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "정당한 명령 발신자 또는 허용된 명령 처리 맥락으로 위장된 정보가 사용되어 차량측 명령 처리 판단의 무결성이 손상되고, 정상 조건이라면 수락되지 않아야 할 명령이 수락될 수 있다.",
+      "damage_scope_raw": "DS-01, DS-03, DS-05, DS-06, DS-08, DS-10, DS-11, DS-12, DS-14, DS-15",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-03",
+        "DS-05",
+        "DS-06",
+        "DS-08",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-01",
+        "AP-02",
+        "AP-03"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-01",
+        "AP-02",
+        "AP-03"
+      ],
+      "risk_record_id": "TS-25"
+    },
+    {
+      "id": "TS-26",
+      "asset_id": "AS-09",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Elevation of Privilege",
+      "statement": "요청 주체 또는 명령이 정상적으로 가지지 않아야 할 처리 권한을 획득하거나 수락 조건을 우회하여 차량측 명령 수락 판단의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-01, DS-03, DS-05, DS-06, DS-08, DS-10, DS-11, DS-12, DS-14, DS-15",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-03",
+        "DS-05",
+        "DS-06",
+        "DS-08",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-02",
+        "AP-06",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-02",
+        "AP-06",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-26"
+    },
+    {
+      "id": "TS-27",
+      "asset_id": "AS-09",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Replay / stale / duplicate processing",
+      "statement": "과거에 정당했던 명령 또는 이미 처리된 명령이 현재의 새로운 명령처럼 다시 수락되어 현재 사용자 의도와 명령 처리 상태의 일치성이 깨진다.",
+      "damage_scope_raw": "DS-01, DS-03, DS-04, DS-05, DS-06, DS-08, DS-10, DS-11, DS-12, DS-14, DS-15",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-08",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-04"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-04"
+      ],
+      "risk_record_id": "TS-27"
+    },
+    {
+      "id": "TS-28",
+      "asset_id": "AS-09",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "차량측 원격명령 처리조건, 판단상태 또는 처리 로직이 변경되어 수락되어야 할 명령이 거부되거나 거부되어야 할 명령이 수락된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "VERY_LOW",
+      "expected_attack_feasibility_raw": "매우 낮음",
+      "attack_path_ids_from_af_table": [
+        "AP-12"
+      ],
+      "risk_record_id": "TS-28"
+    },
+    {
+      "id": "TS-29",
+      "asset_id": "AS-09",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "원격명령 수신, 해석 또는 수락 판단 기능이 자원고갈, 정지 또는 처리불능 상태가 되어 정당한 원격명령을 처리할 수 없게 된다.",
+      "damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "damage_scope_expanded": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-07",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-07",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-29"
+    },
+    {
+      "id": "TS-30",
+      "asset_id": "AS-10",
+      "compromised_properties": [
+        "CONFIDENTIALITY"
+      ],
+      "compromised_property_raw": "기밀성",
+      "cause": "Information Disclosure",
+      "statement": "원격명령의 대상 차량, 명령 종류, 실행 결과 또는 관련 거래 메타데이터가 권한 없는 주체에게 노출되어 해당 정보의 기밀성이 손상된다.",
+      "damage_scope_raw": "DS-17",
+      "damage_scope_expanded": [
+        "DS-17"
+      ],
+      "attack_path_ids": [
+        "AP-05",
+        "AP-06"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-05",
+        "AP-06"
+      ],
+      "risk_record_id": "TS-30"
+    },
+    {
+      "id": "TS-31",
+      "asset_id": "AS-10",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "실제 차량 상태 또는 명령 처리 결과와 다른 상태정보가 정상 결과로 위장되어 사용자에게 제공됨으로써 결과정보의 무결성이 손상된다.",
+      "damage_scope_raw": "DS-16",
+      "damage_scope_expanded": [
+        "DS-16"
+      ],
+      "attack_path_ids": [
+        "AP-05",
+        "AP-06",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-05",
+        "AP-06",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-31"
+    },
+    {
+      "id": "TS-32",
+      "asset_id": "AS-10",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "정상적으로 생성된 명령 처리 결과, 상태, 거래 메타데이터가 변경되어 실제 처리 결과와 보고 결과가 일치하지 않게 된다.",
+      "damage_scope_raw": "DS-16",
+      "damage_scope_expanded": [
+        "DS-16"
+      ],
+      "attack_path_ids": [
+        "AP-05",
+        "AP-06",
+        "AP-12"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-05",
+        "AP-06",
+        "AP-12"
+      ],
+      "risk_record_id": "TS-32"
+    },
+    {
+      "id": "TS-33",
+      "asset_id": "AS-10",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "처리 결과 또는 상태정보가 차단, 삭제, 전달 실패하여 사용자가 원격명령의 처리결과를 확인할 수 없다.",
+      "damage_scope_raw": "DS-16",
+      "damage_scope_expanded": [
+        "DS-16"
+      ],
+      "attack_path_ids": [
+        "AP-05",
+        "AP-07",
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-05",
+        "AP-07",
+        "AP-11"
+      ],
+      "risk_record_id": "TS-33"
+    },
+    {
+      "id": "TS-34",
+      "asset_id": "AS-10",
+      "compromised_properties": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "무결성/가용성",
+      "cause": "Repudiation",
+      "statement": "원격명령의 발생, 처리, 실행에 대한 거래정보가 충분히 보존 또는 검증되지 않아 명령의 발생이나 처리 사실을 부인할 수 있게 되고, 명령 처리 이력의 신뢰성이 손상된다.",
+      "damage_scope_raw": "DS-16",
+      "damage_scope_expanded": [
+        "DS-16"
+      ],
+      "attack_path_ids": [
+        "AP-16"
+      ],
+      "expected_attack_feasibility": "VERY_LOW",
+      "expected_attack_feasibility_raw": "매우 낮음",
+      "attack_path_ids_from_af_table": [
+        "AP-16"
+      ],
+      "risk_record_id": "TS-34"
+    },
+    {
+      "id": "TS-35",
+      "asset_id": "AS-11",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "차량 내부에서 정당한 원격명령 전달 데이터로 위장한 제어데이터가 대상 기능에 전달된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-08",
+        "AP-09"
+      ],
+      "expected_attack_feasibility": "MEDIUM",
+      "expected_attack_feasibility_raw": "중간",
+      "attack_path_ids_from_af_table": [
+        "AP-08",
+        "AP-09"
+      ],
+      "risk_record_id": "TS-35"
+    },
+    {
+      "id": "TS-36",
+      "asset_id": "AS-11",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "차량 내부 전달 중 명령 종류, 대상 또는 파라미터 등이 변경되어 원래 수락된 명령과 다른 제어정보가 대상 기능에 전달된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-10"
+      ],
+      "expected_attack_feasibility": "MEDIUM",
+      "expected_attack_feasibility_raw": "중간",
+      "attack_path_ids_from_af_table": [
+        "AP-10"
+      ],
+      "risk_record_id": "TS-36"
+    },
+    {
+      "id": "TS-37",
+      "asset_id": "AS-11",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "수락된 원격명령의 차량 내부 전달이 차단되어 대상 기능이 정당한 명령을 수신하지 못한다.",
+      "damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "damage_scope_expanded": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-11"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-11"
+      ],
+      "risk_record_id": "TS-37"
+    },
+    {
+      "id": "TS-38",
+      "asset_id": "AS-12",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "원격명령 대상 차량 기능을 구현하는 SW/FW가 변조되어 정상 명령에 대해 의도하지 않은 차량 기능이 수행되거나 정상 기능이 변경된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-13"
+      ],
+      "expected_attack_feasibility": "VERY_LOW",
+      "expected_attack_feasibility_raw": "매우 낮음",
+      "attack_path_ids_from_af_table": [
+        "AP-13"
+      ],
+      "risk_record_id": "TS-38"
+    },
+    {
+      "id": "TS-39",
+      "asset_id": "AS-12",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "대상 기능 제어 SW/FW 또는 실행환경을 사용할 수 없게 되어 정당한 원격명령에 따른 차량 기능을 수행하지 못한다.",
+      "damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "damage_scope_expanded": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-13"
+      ],
+      "expected_attack_feasibility": "VERY_LOW",
+      "expected_attack_feasibility_raw": "매우 낮음",
+      "attack_path_ids_from_af_table": [
+        "AP-13"
+      ],
+      "risk_record_id": "TS-39"
+    },
+    {
+      "id": "TS-40",
+      "asset_id": "AS-12",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Elevation of Privilege",
+      "statement": "대상 기능 제어기에서 허용되지 않은 높은 권한의 실행 또는 제어 권한을 획득하여 정상 원격명령 경로를 우회한 차량 기능 제어가 가능해진다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-13"
+      ],
+      "expected_attack_feasibility": "VERY_LOW",
+      "expected_attack_feasibility_raw": "매우 낮음",
+      "attack_path_ids_from_af_table": [
+        "AP-13"
+      ],
+      "risk_record_id": "TS-40"
+    },
+    {
+      "id": "TS-41",
+      "asset_id": "AS-13",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Spoofing",
+      "statement": "원격명령 판단에 사용되는 실제 차량 상태 또는 운용조건과 다른 허위 상태정보가 정상 입력으로 위장되어 판단 정보의 무결성이 손상된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-14"
+      ],
+      "expected_attack_feasibility": "MEDIUM",
+      "expected_attack_feasibility_raw": "중간",
+      "attack_path_ids_from_af_table": [
+        "AP-14"
+      ],
+      "risk_record_id": "TS-41"
+    },
+    {
+      "id": "TS-42",
+      "asset_id": "AS-13",
+      "compromised_properties": [
+        "INTEGRITY"
+      ],
+      "compromised_property_raw": "무결성",
+      "cause": "Tampering",
+      "statement": "차량 상태정보가 생성 지점과 원격명령 처리 지점 사이에서 변경되어 실제 차량 상태와 다른 값이 명령 수락 판단에 사용된다.",
+      "damage_scope_raw": "해당 기능 피해(DS-01~DS-15)",
+      "damage_scope_expanded": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-14"
+      ],
+      "expected_attack_feasibility": "MEDIUM",
+      "expected_attack_feasibility_raw": "중간",
+      "attack_path_ids_from_af_table": [
+        "AP-14"
+      ],
+      "risk_record_id": "TS-42"
+    },
+    {
+      "id": "TS-43",
+      "asset_id": "AS-13",
+      "compromised_properties": [
+        "AVAILABILITY"
+      ],
+      "compromised_property_raw": "가용성",
+      "cause": "Denial of Service",
+      "statement": "원격명령 수락 판단에 필요한 차량 상태, 운용조건 정보를 사용할 수 없게 되어 상태기반 판단 기능의 가용성이 손상된다.",
+      "damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "damage_scope_expanded": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_path_ids": [
+        "AP-15"
+      ],
+      "expected_attack_feasibility": "HIGH",
+      "expected_attack_feasibility_raw": "높음",
+      "attack_path_ids_from_af_table": [
+        "AP-15"
+      ],
+      "risk_record_id": "TS-43"
+    }
+  ],
+  "attack_paths": [
+    {
+      "id": "AP-01",
+      "name": "사용자 인증문맥 탈취 후 정상 명령 경로 악용",
+      "steps": [
+        "1) 공격자가 정당한 사용자의 remote-service 인증정보 또는 세션을 획득한다.",
+        "2) 정상 Mobile/API 인터페이스로 원격명령을 요청한다.",
+        "3) Backend가 탈취된 인증문맥을 정당한 사용자 요청으로 처리한다.",
+        "4) Command Service가 명령을 대상 차량으로 전달한다.",
+        "5) 차량 C-01/C-02가 정상 명령 형식으로 수신하고 C-03이 수락한다.",
+        "6) C-04를 통해 C-05로 전달되어 차량 기능이 실행된다."
+      ],
+      "steps_raw": "1) 공격자가 정당한 사용자의 remote-service 인증정보 또는 세션을 획득한다.\n2) 정상 Mobile/API 인터페이스로 원격명령을 요청한다.\n3) Backend가 탈취된 인증문맥을 정당한 사용자 요청으로 처리한다.\n4) Command Service가 명령을 대상 차량으로 전달한다.\n5) 차량 C-01/C-02가 정상 명령 형식으로 수신하고 C-03이 수락한다.\n6) C-04를 통해 C-05로 전달되어 차량 기능이 실행된다.",
+      "attack_potential": {
+        "elapsed_time": 1,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 0,
+        "window_of_opportunity": 1,
+        "equipment": 0
+      },
+      "expected_score": 5,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-02",
+      "name": "대상 차량 바인딩 또는 객체 수준 인가 실패 악용",
+      "steps": [
+        "1) 공격자가 자신의 정상 계정 또는 유효 세션을 확보한다.",
+        "2) 원격명령 요청의 vehicle identifier 또는 대상 resource를 다른 차량으로 지정한다.",
+        "3) Backend가 사용자와 대상 차량의 권한 관계를 충분히 검증하지 못한다.",
+        "4) 명령이 공격자가 소유하지 않은 차량으로 전달된다.",
+        "5) 차량이 정상 요청으로 처리하여 의도하지 않은 차량 기능이 실행된다."
+      ],
+      "steps_raw": "1) 공격자가 자신의 정상 계정 또는 유효 세션을 확보한다.\n2) 원격명령 요청의 vehicle identifier 또는 대상 resource를 다른 차량으로 지정한다.\n3) Backend가 사용자와 대상 차량의 권한 관계를 충분히 검증하지 못한다.\n4) 명령이 공격자가 소유하지 않은 차량으로 전달된다.\n5) 차량이 정상 요청으로 처리하여 의도하지 않은 차량 기능이 실행된다.",
+      "attack_potential": {
+        "elapsed_time": 0,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 0,
+        "window_of_opportunity": 0,
+        "equipment": 0
+      },
+      "expected_score": 3,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-03",
+      "name": "Backend / Command Service 침해",
+      "steps": [
+        "1) 공격자가 Backend 또는 Command Service의 실행권한을 획득한다.",
+        "2) 정상 사용자 요청 없이 명령을 생성하거나 정상 명령을 변경한다.",
+        "3) 침해된 서비스가 기존 차량 통신 경로를 이용해 명령을 전달한다.",
+        "4) 차량 C-01/C-02가 명령을 수신하고 처리한다.",
+        "5) C-04를 거쳐 대상 기능으로 전달되어 의도하지 않은 차량 기능이 실행된다."
+      ],
+      "steps_raw": "1) 공격자가 Backend 또는 Command Service의 실행권한을 획득한다.\n2) 정상 사용자 요청 없이 명령을 생성하거나 정상 명령을 변경한다.\n3) 침해된 서비스가 기존 차량 통신 경로를 이용해 명령을 전달한다.\n4) 차량 C-01/C-02가 명령을 수신하고 처리한다.\n5) C-04를 거쳐 대상 기능으로 전달되어 의도하지 않은 차량 기능이 실행된다.",
+      "attack_potential": {
+        "elapsed_time": 4,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 0,
+        "equipment": 4
+      },
+      "expected_score": 17,
+      "expected_feasibility": "MEDIUM",
+      "expected_feasibility_raw": "중간"
+    },
+    {
+      "id": "AP-04",
+      "name": "정상 명령 Replay",
+      "steps": [
+        "1) 공격자가 과거에 정상적으로 생성된 원격명령을 획득한다.",
+        "2) 원래 명령이 정상적으로 처리된다.",
+        "3) 공격자가 동일하거나 동등한 명령을 이후 시점에 다시 제출한다.",
+        "4) freshness 또는 uniqueness 검증이 충분하지 않으면 차량이 새로운 명령으로 처리한다.",
+        "5) 동일 차량 기능이 다시 실행된다."
+      ],
+      "steps_raw": "1) 공격자가 과거에 정상적으로 생성된 원격명령을 획득한다.\n2) 원래 명령이 정상적으로 처리된다.\n3) 공격자가 동일하거나 동등한 명령을 이후 시점에 다시 제출한다.\n4) freshness 또는 uniqueness 검증이 충분하지 않으면 차량이 새로운 명령으로 처리한다.\n5) 동일 차량 기능이 다시 실행된다.",
+      "attack_potential": {
+        "elapsed_time": 0,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 0,
+        "window_of_opportunity": 1,
+        "equipment": 0
+      },
+      "expected_score": 4,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-05",
+      "name": "외부 통신 구간 가로채기, 변경, 차단",
+      "steps": [
+        "1) 공격자가 Client-Backend 또는 Backend-Vehicle 사이 통신경로에 개입한다.",
+        "2) 명령 또는 상태 메시지를 관찰한다.",
+        "3) 통신 상대 인증이나 메시지 무결성 보호가 충분하지 않은 경우 데이터를 변경, 재전송 또는 차단한다.",
+        "4) 변조된 명령, 상태정보가 수신자에게 전달되거나 정상 메시지가 전달되지 않는다.",
+        "5) Item 또는 사용자가 잘못된 명령이나 상태를 처리한다."
+      ],
+      "steps_raw": "1) 공격자가 Client-Backend 또는 Backend-Vehicle 사이 통신경로에 개입한다.\n2) 명령 또는 상태 메시지를 관찰한다.\n3) 통신 상대 인증이나 메시지 무결성 보호가 충분하지 않은 경우 데이터를 변경, 재전송 또는 차단한다.\n4) 변조된 명령, 상태정보가 수신자에게 전달되거나 정상 메시지가 전달되지 않는다.\n5) Item 또는 사용자가 잘못된 명령이나 상태를 처리한다.",
+      "attack_potential": {
+        "elapsed_time": 1,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 0,
+        "window_of_opportunity": 1,
+        "equipment": 0
+      },
+      "expected_score": 5,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-06",
+      "name": "차량 외부 통신 Endpoint 원격 침해",
+      "steps": [
+        "1) 공격자가 차량의 외부 네트워크 인터페이스에 접근한다.",
+        "2) C-01 또는 C-02의 네트워크 서비스나 입력 처리 취약점을 악용한다.",
+        "3) 차량 communication endpoint에서 코드 실행 또는 동등한 제어권을 획득한다.",
+        "4) 내부 command-processing interface에 접근해 악의적 명령을 생성한다.",
+        "5) C-03/C-04를 거쳐 대상 Controller로 전달되어 차량 기능이 실행된다."
+      ],
+      "steps_raw": "1) 공격자가 차량의 외부 네트워크 인터페이스에 접근한다.\n2) C-01 또는 C-02의 네트워크 서비스나 입력 처리 취약점을 악용한다.\n3) 차량 communication endpoint에서 코드 실행 또는 동등한 제어권을 획득한다.\n4) 내부 command-processing interface에 접근해 악의적 명령을 생성한다.\n5) C-03/C-04를 거쳐 대상 Controller로 전달되어 차량 기능이 실행된다.",
+      "attack_potential": {
+        "elapsed_time": 1,
+        "specialist_expertise": 8,
+        "knowledge_of_item": 7,
+        "window_of_opportunity": 0,
+        "equipment": 4
+      },
+      "expected_score": 20,
+      "expected_feasibility": "LOW",
+      "expected_feasibility_raw": "낮음"
+    },
+    {
+      "id": "AP-07",
+      "name": "차량 외부 Command Endpoint DoS",
+      "steps": [
+        "1) 공격자가 차량 외부 command endpoint에 반복 요청 또는 비정상 입력을 전송한다.",
+        "2) C-01/C-02의 통신, 메모리, CPU 또는 connection 자원이 고갈되거나 service가 비정상 상태가 된다.",
+        "3) 정상 원격명령을 수신 또는 처리하지 못한다.",
+        "4) 사용자의 정상 원격기능 요청이 실패한다."
+      ],
+      "steps_raw": "1) 공격자가 차량 외부 command endpoint에 반복 요청 또는 비정상 입력을 전송한다.\n2) C-01/C-02의 통신, 메모리, CPU 또는 connection 자원이 고갈되거나 service가 비정상 상태가 된다.\n3) 정상 원격명령을 수신 또는 처리하지 못한다.\n4) 사용자의 정상 원격기능 요청이 실패한다.",
+      "attack_potential": {
+        "elapsed_time": 0,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 0,
+        "window_of_opportunity": 0,
+        "equipment": 0
+      },
+      "expected_score": 3,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-08",
+      "name": "진단, 정비 인터페이스를 통한 내부 접근",
+      "steps": [
+        "1) 공격자가 차량의 진단 인터페이스에 물리적으로 접근하거나 정비 장비를 장악한다.",
+        "2) 진단 인터페이스를 통해 gateway 또는 내부 network에 접근한다.",
+        "3) 진단 서비스 또는 내부 메시지를 이용해 차량측 component를 제어한다.",
+        "4) 정상 remote-command 처리경로를 우회해 대상 Controller 또는 내부 command channel에 접근한다.",
+        "5) 차량 기능에 영향을 준다."
+      ],
+      "steps_raw": "1) 공격자가 차량의 진단 인터페이스에 물리적으로 접근하거나 정비 장비를 장악한다.\n2) 진단 인터페이스를 통해 gateway 또는 내부 network에 접근한다.\n3) 진단 서비스 또는 내부 메시지를 이용해 차량측 component를 제어한다.\n4) 정상 remote-command 처리경로를 우회해 대상 Controller 또는 내부 command channel에 접근한다.\n5) 차량 기능에 영향을 준다.",
+      "attack_potential": {
+        "elapsed_time": 1,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 4,
+        "equipment": 0
+      },
+      "expected_score": 14,
+      "expected_feasibility": "MEDIUM",
+      "expected_feasibility_raw": "중간"
+    },
+    {
+      "id": "AP-09",
+      "name": "침해된 차량 내부 노드에서 제어메시지 Spoofing",
+      "steps": [
+        "1) 차량 내부 네트워크에 연결된 component가 침해된다.",
+        "2) 침해된 component가 정상 command source와 같은 형태의 내부 제어 메시지를 생성한다.",
+        "3) 메시지가 C-04 또는 C-05로 전달된다.",
+        "4) 대상 Controller가 정상 제어명령으로 처리한다.",
+        "5) 차량 기능이 의도하지 않게 실행된다."
+      ],
+      "steps_raw": "1) 차량 내부 네트워크에 연결된 component가 침해된다.\n2) 침해된 component가 정상 command source와 같은 형태의 내부 제어 메시지를 생성한다.\n3) 메시지가 C-04 또는 C-05로 전달된다.\n4) 대상 Controller가 정상 제어명령으로 처리한다.\n5) 차량 기능이 의도하지 않게 실행된다.",
+      "attack_potential": {
+        "elapsed_time": 1,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 4,
+        "equipment": 0
+      },
+      "expected_score": 14,
+      "expected_feasibility": "MEDIUM",
+      "expected_feasibility_raw": "중간"
+    },
+    {
+      "id": "AP-10",
+      "name": "Gateway 또는 Routing Component 변조",
+      "steps": [
+        "1) 공격자가 C-04 Gateway / Internal Routing component의 제어권을 획득한다.",
+        "2) 정상적으로 수락된 command의 destination, function identifier 또는 payload를 변경한다.",
+        "3) 변경된 명령을 원래와 다른 Controller 또는 기능으로 전달한다.",
+        "4) Target Controller가 수정된 명령을 처리한다.",
+        "5) 사용자가 요청하지 않은 기능이 수행된다."
+      ],
+      "steps_raw": "1) 공격자가 C-04 Gateway / Internal Routing component의 제어권을 획득한다.\n2) 정상적으로 수락된 command의 destination, function identifier 또는 payload를 변경한다.\n3) 변경된 명령을 원래와 다른 Controller 또는 기능으로 전달한다.\n4) Target Controller가 수정된 명령을 처리한다.\n5) 사용자가 요청하지 않은 기능이 수행된다.",
+      "attack_potential": {
+        "elapsed_time": 4,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 4,
+        "equipment": 0
+      },
+      "expected_score": 17,
+      "expected_feasibility": "MEDIUM",
+      "expected_feasibility_raw": "중간"
+    },
+    {
+      "id": "AP-11",
+      "name": "차량 내부 네트워크 DoS",
+      "steps": [
+        "1) 공격자가 내부 네트워크에 접근 가능한 component 또는 diagnostic interface를 확보한다.",
+        "2) 과도한 메시지 전송, network resource 점유 또는 정상 통신 방해를 수행한다.",
+        "3) Remote command, vehicle state 또는 result message가 지연되거나 손실된다.",
+        "4) Target Controller 또는 Command Processor가 필요한 메시지를 수신하지 못한다.",
+        "5) 원격 차량 기능을 사용할 수 없게 된다."
+      ],
+      "steps_raw": "1) 공격자가 내부 네트워크에 접근 가능한 component 또는 diagnostic interface를 확보한다.\n2) 과도한 메시지 전송, network resource 점유 또는 정상 통신 방해를 수행한다.\n3) Remote command, vehicle state 또는 result message가 지연되거나 손실된다.\n4) Target Controller 또는 Command Processor가 필요한 메시지를 수신하지 못한다.\n5) 원격 차량 기능을 사용할 수 없게 된다.",
+      "attack_potential": {
+        "elapsed_time": 0,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 4,
+        "equipment": 0
+      },
+      "expected_score": 10,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-12",
+      "name": "차량측 Command Processing Logic 변조",
+      "steps": [
+        "1) 공격자가 C-02 또는 C-03에 privileged access를 획득한다.",
+        "2) 명령 parser, acceptance condition, configuration 또는 processing state를 변경한다.",
+        "3) 이후 들어오는 정상 명령에 대해 잘못된 수락 또는 거부 판단을 수행한다.",
+        "4) 거부되어야 할 명령이 차량 내부로 전달되거나 정상 명령이 차단된다."
+      ],
+      "steps_raw": "1) 공격자가 C-02 또는 C-03에 privileged access를 획득한다.\n2) 명령 parser, acceptance condition, configuration 또는 processing state를 변경한다.\n3) 이후 들어오는 정상 명령에 대해 잘못된 수락 또는 거부 판단을 수행한다.\n4) 거부되어야 할 명령이 차량 내부로 전달되거나 정상 명령이 차단된다.",
+      "attack_potential": {
+        "elapsed_time": 4,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 7,
+        "window_of_opportunity": 4,
+        "equipment": 4
+      },
+      "expected_score": 25,
+      "expected_feasibility": "VERY_LOW",
+      "expected_feasibility_raw": "매우 낮음"
+    },
+    {
+      "id": "AP-13",
+      "name": "Target Function Controller SW/FW 침해",
+      "steps": [
+        "1) 공격자가 내부 네트워크, 진단, 정비 기능 또는 software update 경로를 통해 C-05에 접근한다.",
+        "2) Controller의 SW/FW 또는 runtime state에 대한 높은 권한을 획득한다.",
+        "3) 정상 제어 SW/FW를 변경하거나 정상 실행을 중단한다.",
+        "4) Remote command에 대한 동작이 변경되거나 command와 무관하게 기능을 제어한다.",
+        "5) 차량 기능이 비정상적으로 실행되거나 사용할 수 없게 된다."
+      ],
+      "steps_raw": "1) 공격자가 내부 네트워크, 진단, 정비 기능 또는 software update 경로를 통해 C-05에 접근한다.\n2) Controller의 SW/FW 또는 runtime state에 대한 높은 권한을 획득한다.\n3) 정상 제어 SW/FW를 변경하거나 정상 실행을 중단한다.\n4) Remote command에 대한 동작이 변경되거나 command와 무관하게 기능을 제어한다.\n5) 차량 기능이 비정상적으로 실행되거나 사용할 수 없게 된다.",
+      "attack_potential": {
+        "elapsed_time": 4,
+        "specialist_expertise": 8,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 10,
+        "equipment": 4
+      },
+      "expected_score": 29,
+      "expected_feasibility": "VERY_LOW",
+      "expected_feasibility_raw": "매우 낮음"
+    },
+    {
+      "id": "AP-14",
+      "name": "Vehicle State Input Spoofing / Tampering",
+      "steps": [
+        "1) 공격자가 vehicle state를 생성하는 ECU 또는 state communication channel을 침해한다.",
+        "2) speed, gear, ignition, charging state 등의 값을 허위로 생성하거나 변경한다.",
+        "3) 잘못된 상태정보가 C-03에 전달된다.",
+        "4) C-03이 실제 차량 상태와 다른 조건을 기준으로 명령을 평가한다.",
+        "5) 허용되지 않아야 할 명령이 수락되거나 정상 명령이 거부된다."
+      ],
+      "steps_raw": "1) 공격자가 vehicle state를 생성하는 ECU 또는 state communication channel을 침해한다.\n2) speed, gear, ignition, charging state 등의 값을 허위로 생성하거나 변경한다.\n3) 잘못된 상태정보가 C-03에 전달된다.\n4) C-03이 실제 차량 상태와 다른 조건을 기준으로 명령을 평가한다.\n5) 허용되지 않아야 할 명령이 수락되거나 정상 명령이 거부된다.",
+      "attack_potential": {
+        "elapsed_time": 1,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 4,
+        "equipment": 0
+      },
+      "expected_score": 14,
+      "expected_feasibility": "MEDIUM",
+      "expected_feasibility_raw": "중간"
+    },
+    {
+      "id": "AP-15",
+      "name": "Vehicle State Input DoS",
+      "steps": [
+        "1) 공격자가 vehicle state source 또는 해당 통신경로를 방해한다.",
+        "2) C-03이 필요한 vehicle state를 수신하지 못한다.",
+        "3) Command Processing이 필요한 운용조건을 평가하지 못한다.",
+        "4) 구현의 실패 처리 정책에 따라 정상 명령이 차단되거나 잘못된 판단이 발생할 수 있다."
+      ],
+      "steps_raw": "1) 공격자가 vehicle state source 또는 해당 통신경로를 방해한다.\n2) C-03이 필요한 vehicle state를 수신하지 못한다.\n3) Command Processing이 필요한 운용조건을 평가하지 못한다.\n4) 구현의 실패 처리 정책에 따라 정상 명령이 차단되거나 잘못된 판단이 발생할 수 있다.",
+      "attack_potential": {
+        "elapsed_time": 0,
+        "specialist_expertise": 3,
+        "knowledge_of_item": 3,
+        "window_of_opportunity": 4,
+        "equipment": 0
+      },
+      "expected_score": 10,
+      "expected_feasibility": "HIGH",
+      "expected_feasibility_raw": "높음"
+    },
+    {
+      "id": "AP-16",
+      "name": "Transaction / Result Evidence 변조",
+      "steps": [
+        "1) 공격자가 command handler 또는 transaction/result 저장영역에 privileged access를 획득한다.",
+        "2) 명령 발생, 수락, 실행, 실패와 관련된 기록을 삭제하거나 수정한다.",
+        "3) 실제 실행 내역과 저장된 transaction evidence가 달라진다.",
+        "4) 명령의 발생 또는 처리 사실을 신뢰성 있게 확인할 수 없게 된다."
+      ],
+      "steps_raw": "1) 공격자가 command handler 또는 transaction/result 저장영역에 privileged access를 획득한다.\n2) 명령 발생, 수락, 실행, 실패와 관련된 기록을 삭제하거나 수정한다.\n3) 실제 실행 내역과 저장된 transaction evidence가 달라진다.\n4) 명령의 발생 또는 처리 사실을 신뢰성 있게 확인할 수 없게 된다.",
+      "attack_potential": {
+        "elapsed_time": 4,
+        "specialist_expertise": 6,
+        "knowledge_of_item": 7,
+        "window_of_opportunity": 4,
+        "equipment": 4
+      },
+      "expected_score": 25,
+      "expected_feasibility": "VERY_LOW",
+      "expected_feasibility_raw": "매우 낮음"
+    }
+  ],
+  "risk_records": [
+    {
+      "threat_id": "TS-01",
+      "asset_id": "AS-01",
+      "risk_damage_scope_raw": "DS-01",
+      "risk_damage_ids": [
+        "DS-01"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-02",
+      "asset_id": "AS-01",
+      "risk_damage_scope_raw": "DS-01",
+      "risk_damage_ids": [
+        "DS-01"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-03",
+      "asset_id": "AS-01",
+      "risk_damage_scope_raw": "DS-02",
+      "risk_damage_ids": [
+        "DS-02"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-04",
+      "asset_id": "AS-02",
+      "risk_damage_scope_raw": "DS-03, DS-04",
+      "risk_damage_ids": [
+        "DS-03",
+        "DS-04"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-05",
+      "asset_id": "AS-02",
+      "risk_damage_scope_raw": "DS-03, DS-04",
+      "risk_damage_ids": [
+        "DS-03",
+        "DS-04"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-06",
+      "asset_id": "AS-02",
+      "risk_damage_scope_raw": "DS-04",
+      "risk_damage_ids": [
+        "DS-04"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-07",
+      "asset_id": "AS-03",
+      "risk_damage_scope_raw": "DS-05, DS-06",
+      "risk_damage_ids": [
+        "DS-05",
+        "DS-06"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MODERATE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 3,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-08",
+      "asset_id": "AS-03",
+      "risk_damage_scope_raw": "DS-05, DS-06",
+      "risk_damage_ids": [
+        "DS-05",
+        "DS-06"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MODERATE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 3,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-09",
+      "asset_id": "AS-03",
+      "risk_damage_scope_raw": "DS-07",
+      "risk_damage_ids": [
+        "DS-07"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-10",
+      "asset_id": "AS-04",
+      "risk_damage_scope_raw": "DS-08",
+      "risk_damage_ids": [
+        "DS-08"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-11",
+      "asset_id": "AS-04",
+      "risk_damage_scope_raw": "DS-08",
+      "risk_damage_ids": [
+        "DS-08"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-12",
+      "asset_id": "AS-04",
+      "risk_damage_scope_raw": "DS-09",
+      "risk_damage_ids": [
+        "DS-09"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-13",
+      "asset_id": "AS-05",
+      "risk_damage_scope_raw": "DS-10, DS-11",
+      "risk_damage_ids": [
+        "DS-10",
+        "DS-11"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MAJOR",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-14",
+      "asset_id": "AS-05",
+      "risk_damage_scope_raw": "DS-10, DS-11",
+      "risk_damage_ids": [
+        "DS-10",
+        "DS-11"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MAJOR",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-15",
+      "asset_id": "AS-05",
+      "risk_damage_scope_raw": "DS-10",
+      "risk_damage_ids": [
+        "DS-10"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MAJOR",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-16",
+      "asset_id": "AS-06",
+      "risk_damage_scope_raw": "DS-12",
+      "risk_damage_ids": [
+        "DS-12"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-17",
+      "asset_id": "AS-06",
+      "risk_damage_scope_raw": "DS-12",
+      "risk_damage_ids": [
+        "DS-12"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-18",
+      "asset_id": "AS-06",
+      "risk_damage_scope_raw": "DS-13",
+      "risk_damage_ids": [
+        "DS-13"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-19",
+      "asset_id": "AS-07",
+      "risk_damage_scope_raw": "DS-14, DS-15",
+      "risk_damage_ids": [
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-20",
+      "asset_id": "AS-07",
+      "risk_damage_scope_raw": "DS-14, DS-15",
+      "risk_damage_ids": [
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "MODERATE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 3,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-21",
+      "asset_id": "AS-07",
+      "risk_damage_scope_raw": "DS-15",
+      "risk_damage_ids": [
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-22",
+      "asset_id": "AS-08",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-23",
+      "asset_id": "AS-08",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-24",
+      "asset_id": "AS-08",
+      "risk_damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "risk_damage_ids": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-25",
+      "asset_id": "AS-09",
+      "risk_damage_scope_raw": "DS-01, DS-03, DS-05, DS-06, DS-08, DS-10, DS-11, DS-12, DS-14, DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-03",
+        "DS-05",
+        "DS-06",
+        "DS-08",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-26",
+      "asset_id": "AS-09",
+      "risk_damage_scope_raw": "DS-01, DS-03, DS-05, DS-06, DS-08, DS-10, DS-11, DS-12, DS-14, DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-03",
+        "DS-05",
+        "DS-06",
+        "DS-08",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-27",
+      "asset_id": "AS-09",
+      "risk_damage_scope_raw": "DS-01, DS-03, DS-04, DS-05, DS-06, DS-08, DS-10, DS-11, DS-12, DS-14, DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-08",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-28",
+      "asset_id": "AS-09",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "VERY_LOW",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 2,
+        "privacy": 1
+      },
+      "expected_final_risk": 2
+    },
+    {
+      "threat_id": "TS-29",
+      "asset_id": "AS-09",
+      "risk_damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "risk_damage_ids": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-30",
+      "asset_id": "AS-10",
+      "risk_damage_scope_raw": "DS-17",
+      "risk_damage_ids": [
+        "DS-17"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "NEGLIGIBLE",
+        "privacy": "MODERATE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 1,
+        "privacy": 3
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-31",
+      "asset_id": "AS-10",
+      "risk_damage_scope_raw": "DS-16",
+      "risk_damage_ids": [
+        "DS-16"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-32",
+      "asset_id": "AS-10",
+      "risk_damage_scope_raw": "DS-16",
+      "risk_damage_ids": [
+        "DS-16"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-33",
+      "asset_id": "AS-10",
+      "risk_damage_scope_raw": "DS-16",
+      "risk_damage_ids": [
+        "DS-16"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 3,
+        "privacy": 1
+      },
+      "expected_final_risk": 3
+    },
+    {
+      "threat_id": "TS-34",
+      "asset_id": "AS-10",
+      "risk_damage_scope_raw": "DS-16",
+      "risk_damage_ids": [
+        "DS-16"
+      ],
+      "attack_feasibility": "VERY_LOW",
+      "impact_vector": {
+        "safety": "NEGLIGIBLE",
+        "financial": "NEGLIGIBLE",
+        "operational": "MODERATE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 1,
+        "privacy": 1
+      },
+      "expected_final_risk": 1
+    },
+    {
+      "threat_id": "TS-35",
+      "asset_id": "AS-11",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "MEDIUM",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 3,
+        "financial": 2,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-36",
+      "asset_id": "AS-11",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "MEDIUM",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 3,
+        "financial": 2,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-37",
+      "asset_id": "AS-11",
+      "risk_damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "risk_damage_ids": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    },
+    {
+      "threat_id": "TS-38",
+      "asset_id": "AS-12",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "VERY_LOW",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 2,
+        "privacy": 1
+      },
+      "expected_final_risk": 2
+    },
+    {
+      "threat_id": "TS-39",
+      "asset_id": "AS-12",
+      "risk_damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "risk_damage_ids": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_feasibility": "VERY_LOW",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 2,
+        "privacy": 1
+      },
+      "expected_final_risk": 2
+    },
+    {
+      "threat_id": "TS-40",
+      "asset_id": "AS-12",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "VERY_LOW",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 2,
+        "privacy": 1
+      },
+      "expected_final_risk": 2
+    },
+    {
+      "threat_id": "TS-41",
+      "asset_id": "AS-13",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "MEDIUM",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 3,
+        "financial": 2,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-42",
+      "asset_id": "AS-13",
+      "risk_damage_scope_raw": "DS-01~DS-15",
+      "risk_damage_ids": [
+        "DS-01",
+        "DS-02",
+        "DS-03",
+        "DS-04",
+        "DS-05",
+        "DS-06",
+        "DS-07",
+        "DS-08",
+        "DS-09",
+        "DS-10",
+        "DS-11",
+        "DS-12",
+        "DS-13",
+        "DS-14",
+        "DS-15"
+      ],
+      "attack_feasibility": "MEDIUM",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 3,
+        "financial": 2,
+        "operational": 4,
+        "privacy": 1
+      },
+      "expected_final_risk": 4
+    },
+    {
+      "threat_id": "TS-43",
+      "asset_id": "AS-13",
+      "risk_damage_scope_raw": "DS-02, DS-04, DS-07, DS-09, DS-10, DS-13, DS-15",
+      "risk_damage_ids": [
+        "DS-02",
+        "DS-04",
+        "DS-07",
+        "DS-09",
+        "DS-10",
+        "DS-13",
+        "DS-15"
+      ],
+      "attack_feasibility": "HIGH",
+      "impact_vector": {
+        "safety": "MAJOR",
+        "financial": "MODERATE",
+        "operational": "SEVERE",
+        "privacy": "NEGLIGIBLE"
+      },
+      "risk_by_dimension": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 5,
+        "privacy": 1
+      },
+      "expected_final_risk": 5
+    }
+  ],
+  "treatments": [
+    {
+      "threat_id": "TS-01",
+      "asset_id": "AS-01",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-02",
+      "asset_id": "AS-01",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-03",
+      "asset_id": "AS-01",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-04",
+      "asset_id": "AS-02",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-05",
+      "asset_id": "AS-02",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-06",
+      "asset_id": "AS-02",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-07",
+      "asset_id": "AS-03",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-08",
+      "asset_id": "AS-03",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-09",
+      "asset_id": "AS-03",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-10",
+      "asset_id": "AS-04",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-11",
+      "asset_id": "AS-04",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-12",
+      "asset_id": "AS-04",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-13",
+      "asset_id": "AS-05",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-14",
+      "asset_id": "AS-05",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-15",
+      "asset_id": "AS-05",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-16",
+      "asset_id": "AS-06",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-17",
+      "asset_id": "AS-06",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-18",
+      "asset_id": "AS-06",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-19",
+      "asset_id": "AS-07",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-20",
+      "asset_id": "AS-07",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-21",
+      "asset_id": "AS-07",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-22",
+      "asset_id": "AS-08",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-23",
+      "asset_id": "AS-08",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-24",
+      "asset_id": "AS-08",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-25",
+      "asset_id": "AS-09",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-26",
+      "asset_id": "AS-09",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-27",
+      "asset_id": "AS-09",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-28",
+      "asset_id": "AS-09",
+      "risk": 2,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-29",
+      "asset_id": "AS-09",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-30",
+      "asset_id": "AS-10",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-31",
+      "asset_id": "AS-10",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-32",
+      "asset_id": "AS-10",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-33",
+      "asset_id": "AS-10",
+      "risk": 3,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-34",
+      "asset_id": "AS-10",
+      "risk": 1,
+      "decision": "RETAIN",
+      "decision_raw": "위험 유지",
+      "rationale": "Risk 1이며 현재 Attack Feasibility와 영향 평가를 고려해 위험 유지. 향후 가정 또는 공격경로가 바뀌면 재평가."
+    },
+    {
+      "threat_id": "TS-35",
+      "asset_id": "AS-11",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-36",
+      "asset_id": "AS-11",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-37",
+      "asset_id": "AS-11",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-38",
+      "asset_id": "AS-12",
+      "risk": 2,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-39",
+      "asset_id": "AS-12",
+      "risk": 2,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-40",
+      "asset_id": "AS-12",
+      "risk": 2,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-41",
+      "asset_id": "AS-13",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-42",
+      "asset_id": "AS-13",
+      "risk": 4,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    },
+    {
+      "threat_id": "TS-43",
+      "asset_id": "AS-13",
+      "risk": 5,
+      "decision": "REDUCE",
+      "decision_raw": "위험 감소",
+      "rationale": "국내 매뉴얼 예시 기준상 Risk 2 이상이므로 위험 감소."
+    }
+  ],
+  "cal_matrix_from_report": {
+    "SEVERE": {
+      "PHYSICAL": "CAL2",
+      "LOCAL": "CAL3",
+      "ADJACENT": "CAL4",
+      "NETWORK": "CAL4"
+    },
+    "MAJOR": {
+      "PHYSICAL": "CAL1",
+      "LOCAL": "CAL2",
+      "ADJACENT": "CAL3",
+      "NETWORK": "CAL4"
+    },
+    "MODERATE": {
+      "PHYSICAL": "CAL1",
+      "LOCAL": "CAL1",
+      "ADJACENT": "CAL2",
+      "NETWORK": "CAL3"
+    },
+    "NEGLIGIBLE": {
+      "PHYSICAL": null,
+      "LOCAL": null,
+      "ADJACENT": null,
+      "NETWORK": null
+    }
+  },
+  "cybersecurity_goals": [
+    {
+      "id": "CSG-01",
+      "asset_scope_raw": "AS-01, AS-02, AS-03, AS-04, AS-05, AS-06, AS-07, AS-09",
+      "asset_ids": [
+        "AS-01",
+        "AS-02",
+        "AS-03",
+        "AS-04",
+        "AS-05",
+        "AS-06",
+        "AS-07",
+        "AS-09"
+      ],
+      "threat_ids": [
+        "TS-01",
+        "TS-04",
+        "TS-07",
+        "TS-10",
+        "TS-13",
+        "TS-16",
+        "TS-19",
+        "TS-25",
+        "TS-26"
+      ],
+      "expected_max_risk": 5,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL4",
+      "statement": "정당한 권한을 가진 주체가 허용된 차량 기능에 요청한 원격명령만 차량에서 수락하고 실행해야 한다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "NETWORK",
+      "representative_attack_vector_raw": "네트워크(Network)"
+    },
+    {
+      "id": "CSG-02",
+      "asset_scope_raw": "AS-01~AS-08",
+      "asset_ids": [
+        "AS-01",
+        "AS-02",
+        "AS-03",
+        "AS-04",
+        "AS-05",
+        "AS-06",
+        "AS-07",
+        "AS-08"
+      ],
+      "threat_ids": [
+        "TS-02",
+        "TS-05",
+        "TS-08",
+        "TS-11",
+        "TS-14",
+        "TS-17",
+        "TS-20",
+        "TS-22",
+        "TS-23"
+      ],
+      "expected_max_risk": 5,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL4",
+      "statement": "원격명령의 종류, 파라미터, 대상 차량, 대상 기능 및 라우팅 정보는 생성된 시점부터 차량 내 최종 전달까지 허가 없이 변경되어서는 안 된다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "NETWORK",
+      "representative_attack_vector_raw": "네트워크(Network)"
+    },
+    {
+      "id": "CSG-03",
+      "asset_scope_raw": "AS-09",
+      "asset_ids": [
+        "AS-09"
+      ],
+      "threat_ids": [
+        "TS-27"
+      ],
+      "expected_max_risk": 5,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL4",
+      "statement": "원격명령은 허용된 유효기간과 처리 횟수 내에서만 실행되어야 하며, 이미 처리했거나 유효기간이 지난 명령이 새로운 명령으로 다시 실행되어서는 안 된다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "NETWORK",
+      "representative_attack_vector_raw": "네트워크(Network)"
+    },
+    {
+      "id": "CSG-04",
+      "asset_scope_raw": "AS-01~AS-09, AS-11",
+      "asset_ids": [
+        "AS-01",
+        "AS-02",
+        "AS-03",
+        "AS-04",
+        "AS-05",
+        "AS-06",
+        "AS-07",
+        "AS-08",
+        "AS-09",
+        "AS-11"
+      ],
+      "threat_ids": [
+        "TS-03",
+        "TS-06",
+        "TS-09",
+        "TS-12",
+        "TS-15",
+        "TS-18",
+        "TS-21",
+        "TS-24",
+        "TS-29",
+        "TS-37"
+      ],
+      "expected_max_risk": 5,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL4",
+      "statement": "원격명령의 수신, 처리, 대상 식별, 내부 전달 기능은 비정상적인 요청이나 통신 부하가 발생하더라도 정상 명령 처리를 지속하거나 안전한 상태로 실패해야 한다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "NETWORK",
+      "representative_attack_vector_raw": "네트워크(Network)"
+    },
+    {
+      "id": "CSG-05",
+      "asset_scope_raw": "AS-13",
+      "asset_ids": [
+        "AS-13"
+      ],
+      "threat_ids": [
+        "TS-41",
+        "TS-42",
+        "TS-43"
+      ],
+      "expected_max_risk": 5,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL3",
+      "statement": "원격명령 수락 판단에 사용하는 차량 상태와 운용조건 정보는 실제 차량 상태와 일치하도록 보호되어야 하며, 필요한 상태정보를 신뢰할 수 없거나 사용할 수 없는 경우 부적절한 명령을 수락해서는 안 된다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "LOCAL",
+      "representative_attack_vector_raw": "국부적(Local)"
+    },
+    {
+      "id": "CSG-06",
+      "asset_scope_raw": "AS-09",
+      "asset_ids": [
+        "AS-09"
+      ],
+      "threat_ids": [
+        "TS-28"
+      ],
+      "expected_max_risk": 2,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL3",
+      "statement": "차량측 원격명령 수신, 해석 및 수락 판단에 사용되는 처리 로직과 관련 상태 및 설정은 비인가 변경으로부터 보호되어야 한다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "LOCAL",
+      "representative_attack_vector_raw": "국부적(Local)"
+    },
+    {
+      "id": "CSG-07",
+      "asset_scope_raw": "AS-11",
+      "asset_ids": [
+        "AS-11"
+      ],
+      "threat_ids": [
+        "TS-35",
+        "TS-36"
+      ],
+      "expected_max_risk": 4,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL3",
+      "statement": "차량측 원격명령 처리부에서 대상 기능 제어기까지 전달되는 내부 제어정보는 정당한 송신원에서 생성된 정보임을 확인할 수 있어야 하며 전송 과정에서 변조되어서는 안 된다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "LOCAL",
+      "representative_attack_vector_raw": "국부적(Local)"
+    },
+    {
+      "id": "CSG-08",
+      "asset_scope_raw": "AS-12",
+      "asset_ids": [
+        "AS-12"
+      ],
+      "threat_ids": [
+        "TS-38",
+        "TS-39",
+        "TS-40"
+      ],
+      "expected_max_risk": 2,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL3",
+      "statement": "원격명령 대상 기능을 수행하는 차량 제어기의 소프트웨어, 펌웨어 및 실행 권한은 비인가 변경, 비인가 실행 및 서비스 중단으로부터 보호되어야 한다.",
+      "max_impact": "SEVERE",
+      "max_impact_raw": "심각한(Severe)",
+      "representative_attack_vector": "LOCAL",
+      "representative_attack_vector_raw": "국부적(Local)"
+    },
+    {
+      "id": "CSG-09",
+      "asset_scope_raw": "AS-10",
+      "asset_ids": [
+        "AS-10"
+      ],
+      "threat_ids": [
+        "TS-31",
+        "TS-32",
+        "TS-33"
+      ],
+      "expected_max_risk": 3,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL3",
+      "statement": "원격명령의 처리 결과와 차량 상태정보는 실제 실행 결과와 일치하도록 보호되고 정당한 사용자에게 필요한 시점에 제공되어야 한다.",
+      "max_impact": "MODERATE",
+      "max_impact_raw": "보통의(Moderate)",
+      "representative_attack_vector": "NETWORK",
+      "representative_attack_vector_raw": "네트워크(Network)"
+    },
+    {
+      "id": "CSG-10",
+      "asset_scope_raw": "AS-10",
+      "asset_ids": [
+        "AS-10"
+      ],
+      "threat_ids": [
+        "TS-30"
+      ],
+      "expected_max_risk": 3,
+      "treatment": "REDUCE",
+      "treatment_raw": "위험 감소",
+      "expected_cal": "CAL3",
+      "statement": "원격명령의 대상 차량, 명령 종류, 처리 시각 및 결과 등 차량 이용행태를 나타낼 수 있는 거래정보는 권한 없는 주체에게 노출되어서는 안 된다.",
+      "max_impact": "MODERATE",
+      "max_impact_raw": "보통의(Moderate)",
+      "representative_attack_vector": "NETWORK",
+      "representative_attack_vector_raw": "네트워크(Network)"
+    }
+  ],
+  "cybersecurity_claims": [
+    {
+      "id": "CSC-01",
+      "asset_ids": [
+        "AS-10"
+      ],
+      "threat_ids": [
+        "TS-34"
+      ],
+      "risk": 1,
+      "treatment": "RETAIN",
+      "treatment_raw": "위험 유지",
+      "cal": "해당 없음(Claim)",
+      "statement": "원격명령의 발생 및 실행 이력에 대한 부인 위험은 현재 Reference Item에서 Risk 1로 평가되어 유지한다. 이 판단은 해당 이력을 변조하려면 차량측의 높은 실행권한, 내부 구현정보 및 전문적인 공격수단이 필요하다는 가정에 근거한다. 향후 이 가정이 성립하지 않거나 새로운 공격경로가 확인되면 공격 실현 가능성과 위험 처리 결정을 다시 평가한다."
+    }
+  ],
+  "report_consistency_checks": [
+    {
+      "check": "Item Definition 대비 TARA 범위",
+      "expected_result": "PASS",
+      "report_statement": "7개 Item Function이 Asset/Damage에 연결됨"
+    },
+    {
+      "check": "Asset/Damage 대비 Threat 완전성",
+      "expected_result": "PASS",
+      "report_statement": "13 Assets, 17 Damage Scenarios, 43 Threat Scenarios를 추적 가능"
+    },
+    {
+      "check": "Threat 대비 Attack Path",
+      "expected_result": "PASS",
+      "report_statement": "43/43 Threat Scenario가 하나 이상의 Attack Path에 연결됨"
+    },
+    {
+      "check": "Attack Path Feasibility",
+      "expected_result": "PASS",
+      "report_statement": "16/16 Attack Path 평가 완료"
+    },
+    {
+      "check": "Threat Risk Value",
+      "expected_result": "PASS",
+      "report_statement": "43/43 Risk Value 산정 완료"
+    },
+    {
+      "check": "Risk Treatment",
+      "expected_result": "PASS",
+      "report_statement": "43/43 Treatment 결정 완료"
+    },
+    {
+      "check": "Reduce Threat 대비 Goal",
+      "expected_result": "PASS",
+      "report_statement": "42/42 위험 감소 위협이 CSG-01~CSG-10에 연결됨"
+    },
+    {
+      "check": "Retain Threat 대비 Claim",
+      "expected_result": "PASS",
+      "report_statement": "TS-34가 CSC-01에 연결됨"
+    },
+    {
+      "check": "Goal/Claim 상호 일관성",
+      "expected_result": "PASS",
+      "report_statement": "Authorization, Integrity, Freshness, Availability, Vehicle State, SW/FW, Result, Privacy 보호 목적 사이에 직접 충돌 없음"
+    }
+  ],
+  "verification_extension": {
+    "formal_focus": [
+      {
+        "tara_threat_raw": "TS-22 대상 차량·기능 스푸핑",
+        "threat_ids": [
+          "TS-22"
+        ],
+        "risk": 5,
+        "goal_id": "CSG-02",
+        "cal": "CAL4",
+        "focus": "인증된 명령의 대상 차량·기능 결합"
+      },
+      {
+        "tara_threat_raw": "TS-23 대상·라우팅 변조",
+        "threat_ids": [
+          "TS-23"
+        ],
+        "risk": 5,
+        "goal_id": "CSG-02",
+        "cal": "CAL4",
+        "focus": "대상·동작·파라미터·명령 식별자의 의미 보존"
+      },
+      {
+        "tara_threat_raw": "TS-25 정당한 처리문맥 스푸핑",
+        "threat_ids": [
+          "TS-25"
+        ],
+        "risk": 5,
+        "goal_id": "CSG-01",
+        "cal": "CAL4",
+        "focus": "수락 이전의 정상 발급 및 권한 정책 대응"
+      },
+      {
+        "tara_threat_raw": "TS-26 수락·권한 검증 우회",
+        "threat_ids": [
+          "TS-26"
+        ],
+        "risk": 5,
+        "goal_id": "CSG-01",
+        "cal": "CAL4",
+        "focus": "권한 없는 명령의 수락 가능성"
+      },
+      {
+        "tara_threat_raw": "TS-27 재전송·오래된 명령·중복 수락",
+        "threat_ids": [
+          "TS-27"
+        ],
+        "risk": 5,
+        "goal_id": "CSG-03",
+        "cal": "CAL4",
+        "focus": "동일 명령의 중복 수락과 상태 지속성"
+      }
+    ],
+    "formal_properties": [
+      {
+        "id": "P0",
+        "name": "P0 정상 도달성",
+        "definition": "정상 명령 1건과 서로 다른 cid를 가진 정상 명령 2건이 수락되는 실행이 존재해야 한다.",
+        "tara_mapping_raw": "보안통제 적용 후 정상 기능 보존 확인",
+        "tools_raw": "Tamarin, Z3"
+      },
+      {
+        "id": "P1",
+        "name": "P1 발급·정책 대응",
+        "definition": "모든 수락에는 그보다 앞선 동일 내용의 Issue와 AuthorizedAtIssue가 존재해야 한다.",
+        "tara_mapping_raw": "TS-25, TS-26 / CSG-01",
+        "tools_raw": "Tamarin, ProVerif, Z3"
+      },
+      {
+        "id": "P2",
+        "name": "P2 경계 의미 보존",
+        "definition": "최종 수신 대상, 동작, 파라미터, cid가 인증된 상위 명령의 값과 동일해야 한다.",
+        "tara_mapping_raw": "TS-22, TS-23 / CSG-02",
+        "tools_raw": "Tamarin, ProVerif 변형, Z3"
+      },
+      {
+        "id": "P3",
+        "name": "P3 중복 수락 제한",
+        "definition": "동일한 (issuer, VIN, cid)의 명령은 최대 한 번만 수락되어야 한다.",
+        "tara_mapping_raw": "TS-27 / CSG-03",
+        "tools_raw": "Tamarin, ProVerif, Z3"
+      }
+    ],
+    "threat_coverage": [
+      {
+        "threat_id": "TS-01",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "RELATED_ONLY",
+        "test_result": "RELATED_ONLY",
+        "coverage": "TRACE_ONLY",
+        "limitations": "합성 lock/unlock 경로의 발급과 인증은 관련 근거다. 접근제어 spoofing 전 범위, 현재 사용자 의도와 로그인 보안은 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-02",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "RELATED_ONLY",
+        "test_result": "RELATED_ONLY",
+        "coverage": "TRACE_ONLY",
+        "limitations": "접근제어 명령 전 범위와 실제 제어기까지의 변조 위협을 독립적으로 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-03",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "접근제어 명령의 차단, 손실, 자원고갈 또는 안전한 실패를 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-04",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "원동기와 주행 기능의 spoofing 경로를 시험하지 않았다. 합성 unlock 결과를 이 기능으로 확대하지 않는다."
+      },
+      {
+        "threat_id": "TS-05",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "원동기와 주행 명령의 종류 및 파라미터 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-06",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "원동기와 주행 원격기능의 전달 또는 처리 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-07",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "창문, 선루프, 트렁크 등 개구부 명령의 spoofing 경로를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-08",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "개구부 명령의 방향, 대상 및 파라미터 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-09",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "개구부 원격제어의 전달 및 처리 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-10",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "열, 공조 및 편의 명령의 spoofing 경로를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-11",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "온도, 작동 상태 및 편의기능 대상의 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-12",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "공조, 난방 및 열선 원격제어의 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-13",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "충전과 고전압 배터리 명령의 spoofing 경로를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-14",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "충전 시작, 정지, 전류 또는 충전 한도 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-15",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "원격 충전 제어의 전달 및 처리 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-16",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "경적, 등화와 차량찾기 명령의 spoofing 경로를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-17",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "신호 종류, 대상과 동작정보의 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-18",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "차량찾기와 신호 원격기능의 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-19",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "보안 및 제한 운용모드 명령의 spoofing 경로를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-20",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "보안 및 제한 운용모드 활성화 정보의 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-21",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "보안 및 제한 운용모드 원격제어의 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-22",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "PROVED: 기존 전체 Tamarin P2 질의",
+        "test_result": "PASS",
+        "coverage": "IMPLEMENTATION_TESTED",
+        "limitations": "로컬 차량 식별자 두 개의 참조 수신 경로다. 전체 fleet 객체 인가와 실제 ECU 라우팅을 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-23",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-02 명령 의미와 대상 결합 무결성",
+        "formal_result": "PROVED: 기존 전체 Tamarin P2 질의",
+        "test_result": "PASS",
+        "coverage": "IMPLEMENTATION_TESTED",
+        "limitations": "합성 명령의 대상과 일부 파라미터를 확인했다. 실제 ECU 라우팅과 모든 차량 명령 필드를 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-24",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "대상 식별과 내부 라우팅 정보의 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-25",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "PROVED: 기존 전체 Tamarin P1 질의",
+        "test_result": "PASS",
+        "coverage": "IMPLEMENTATION_TESTED",
+        "limitations": "P1은 발급 시점 정책이다. 즉시 권한 회수, 현재 사용자 의도, 로그인 보안과 침해된 발급자는 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-26",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-01 정당한 권한과 허용 기능",
+        "formal_result": "PROVED: 기존 전체 Tamarin P1 질의",
+        "test_result": "PASS",
+        "coverage": "IMPLEMENTATION_TESTED",
+        "limitations": "실시간 권한 회수, 침해된 발급자와 모든 권한 상승 및 수락 우회 경로를 보장하지 않는다."
+      },
+      {
+        "threat_id": "TS-27",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-03 명령 유효성과 replay 방지",
+        "formal_result": "STATE_PROJECTION_PROVED; FULL_TO_PROJECTION_MANUAL; FULL_DIRECT_UNKNOWN",
+        "test_result": "PASS: atomic 9/9 무중복; 의도적 non-atomic 9/9 중복 재현; stateless MQTT 13/13 완료",
+        "coverage": "E2E_TESTED",
+        "limitations": "cid 범위와 보존된 단일 SQLite 상태를 전제로 한 논리적 수락 at-most-once다. 직접 전체 P3는 UNKNOWN이며 명령 만료, rollback과 분산 합의, CAN 송신과 물리 동작 exactly-once는 보장하지 않는다."
+      },
+      {
+        "threat_id": "TS-28",
+        "risk": 2,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-06 처리 로직과 설정 무결성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "수락 코드, 설정 또는 판단 상태 자체의 비인가 변경과 권한 경계 침해를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-29",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "수신자 자원고갈, 정지와 처리불능 상황의 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-30",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-10 거래정보 기밀성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "대상 VIN, 명령 종류, 처리 시각과 결과 메타데이터의 기밀성을 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-31",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-09 처리 결과의 무결성과 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "차량에서 원격 사용자까지 전달되는 결과 위조 경로를 시험하지 않았다. SQLite audit는 사용자 응답 경로 검증이 아니다."
+      },
+      {
+        "threat_id": "TS-32",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-09 처리 결과의 무결성과 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "사용자 응답까지의 결과 및 거래 메타데이터 변조를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-33",
+        "risk": 3,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-09 처리 결과의 무결성과 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "결과와 상태정보 전달 서비스의 가용성을 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-34",
+        "risk": 1,
+        "treatment": "RETAIN",
+        "goal_raw": "CSC-01 위험 유지 주장",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "기존 Risk 1 위험 유지 판단을 보존한다. audit 테이블의 존재만으로 부인방지나 로그 위변조 방지를 검증한 것으로 보지 않는다."
+      },
+      {
+        "threat_id": "TS-35",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-07 내부 제어정보 송신원과 무결성",
+        "formal_result": "RELATED_ONLY",
+        "test_result": "RELATED_ONLY",
+        "coverage": "TRACE_ONLY",
+        "limitations": "실제 CAN 또는 Automotive Ethernet 송신원 인증, AUTOSAR SecOC 적합성, 침해된 내부 노드의 spoofing 방지는 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-36",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-07 내부 제어정보 송신원과 무결성",
+        "formal_result": "RELATED_ONLY",
+        "test_result": "RELATED_ONLY",
+        "coverage": "TRACE_ONLY",
+        "limitations": "실제 차량 내부망 전달 중 변조, 키 관리와 대상 제어기 수신까지 검증하지 않았다."
+      },
+      {
+        "threat_id": "TS-37",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-04 원격명령 경로 가용성",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "차량 내부 전달 차단과 네트워크 DoS를 평가하지 않았다."
+      },
+      {
+        "threat_id": "TS-38",
+        "risk": 2,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-08 제어 SW/FW와 실행 권한 보호",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "Secure Boot, 펌웨어 갱신과 제어 SW/FW 변조에 대한 실증 자료가 없다."
+      },
+      {
+        "threat_id": "TS-39",
+        "risk": 2,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-08 제어 SW/FW와 실행 권한 보호",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "대상 제어기와 실행환경의 자원고갈, 중단 및 복구를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-40",
+        "risk": 2,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-08 제어 SW/FW와 실행 권한 보호",
+        "formal_result": "NOT_EVALUATED",
+        "test_result": "NOT_EVALUATED",
+        "coverage": "TRACE_ONLY",
+        "limitations": "제어기 실행 권한 탈취와 정상 명령 경로 우회를 시험하지 않았다."
+      },
+      {
+        "threat_id": "TS-41",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-05 차량 상태 입력의 신뢰성과 fail-closed 판단",
+        "formal_result": "SZ-01 UNSAT; SZ-02 정상 도달성 SAT; SZ-03, SZ-04, SZ-10 검사 제거 비교군 위반 SAT; SZ-13 인증된 거짓 제공자 한계 SAT; UNKNOWN 0",
+        "test_result": "S1 ACCEPT 20/20; S2 STATE_POLICY BLOCKED 20/20; S7 인증된 거짓 보고 ACCEPT/VIOLATION 20/20; 독립 감사 PASS 문제 0건",
+        "coverage": "E2E_TESTED",
+        "limitations": "합성 unlock 정책과 로컬 loopback 경로의 대표 사례다. S7은 synthetic out-of-band assumption을 둔 negative control이며 물리 센서 진실성 관측이 아니다. 인증 가능한 제공자의 거짓 보고는 차단하지 못한다."
+      },
+      {
+        "threat_id": "TS-42",
+        "risk": 4,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-05 차량 상태 입력의 신뢰성과 fail-closed 판단",
+        "formal_result": "SZ-04, SZ-07, SZ-11, SZ-12 검사 제거 비교군 위반 SAT; SZ-14 완전 검사 위반 질의 UNSAT; UNKNOWN 0",
+        "test_result": "S4 STATE_MAC BLOCKED 20/20; S5 STATE_REVISION BLOCKED 20/20; S6 STATE_POLICY_REVISION BLOCKED 20/20; 독립 감사 PASS 문제 0건",
+        "coverage": "E2E_TESTED",
+        "limitations": "S5와 S6은 두 Barrier로 같은 receiver 프로세스 안의 결정적 갱신 순서를 만들었다. 잠금은 같은 프로세스의 같은 StateAuthority API 갱신만 조정하며 프로세스 간 원자성이나 물리 원자성을 보장하지 않는다."
+      },
+      {
+        "threat_id": "TS-43",
+        "risk": 5,
+        "treatment": "REDUCE",
+        "goal_raw": "CSG-05 차량 상태 입력의 신뢰성과 fail-closed 판단",
+        "formal_result": "SZ-05, SZ-06 검사 제거 비교군 위반 SAT; SZ-08, SZ-09, SZ-15 완전 검사 위반 질의 UNSAT; UNKNOWN 0",
+        "test_result": "S3 STATE_STALE BLOCKED 20/20; 독립 감사 PASS 문제 0건",
+        "coverage": "E2E_TESTED",
+        "limitations": "fail-closed 동작을 확인했을 뿐 상태 제공 서비스의 가용성이나 DoS 내성을 증명하지 않았다. 100 ms는 상태 표본 TTL이며 명령 자체의 유효기간이 아니다."
+      }
+    ]
+  },
+  "expected_cardinality": {
+    "functions": 7,
+    "assets": 13,
+    "damage_scenarios": 17,
+    "threat_scenarios": 43,
+    "attack_paths": 16,
+    "impact_ratings": 68,
+    "attack_feasibility_ratings": 16,
+    "risk_values": 43,
+    "reduce": 42,
+    "retain": 1,
+    "cybersecurity_goals": 10,
+    "cybersecurity_claims": 1
+  },
+  "method_reference_from_report": {
+    "attack_potential": {
+      "formula": "ET + SE + KoIC + WoO + Eq",
+      "factor_scores": {
+        "ET": {
+          "<=1 day": 0,
+          "<=1 week": 1,
+          "<=1 month": 4,
+          "<=6 months": 17,
+          ">6 months": 19
+        },
+        "SE": {
+          "Layman": 0,
+          "Proficient": 3,
+          "Expert": 6,
+          "Multiple experts": 8
+        },
+        "KoIC": {
+          "Public": 0,
+          "Restricted": 3,
+          "Confidential": 7,
+          "Strictly confidential": 11
+        },
+        "WoO": {
+          "Unlimited": 0,
+          "Easy": 1,
+          "Moderate": 4,
+          "Difficult/None": 10
+        },
+        "Eq": {
+          "Standard": 0,
+          "Specialized": 4,
+          "Bespoke": 7,
+          "Multiple bespoke": 9
+        }
+      },
+      "score_to_feasibility": [
+        {
+          "min": 0,
+          "max": 13,
+          "rating": "HIGH"
+        },
+        {
+          "min": 14,
+          "max": 19,
+          "rating": "MEDIUM"
+        },
+        {
+          "min": 20,
+          "max": 24,
+          "rating": "LOW"
+        },
+        {
+          "min": 25,
+          "max": null,
+          "rating": "VERY_LOW"
+        }
+      ],
+      "source": "Final report Table 20"
+    },
+    "risk_matrix": {
+      "SEVERE": {
+        "VERY_LOW": 2,
+        "LOW": 3,
+        "MEDIUM": 4,
+        "HIGH": 5
+      },
+      "MAJOR": {
+        "VERY_LOW": 1,
+        "LOW": 2,
+        "MEDIUM": 3,
+        "HIGH": 4
+      },
+      "MODERATE": {
+        "VERY_LOW": 1,
+        "LOW": 2,
+        "MEDIUM": 2,
+        "HIGH": 3
+      },
+      "NEGLIGIBLE": {
+        "VERY_LOW": 1,
+        "LOW": 1,
+        "MEDIUM": 1,
+        "HIGH": 1
+      },
+      "source": "Final report Table 24"
+    },
+    "treatment_policy": {
+      "rules": [
+        {
+          "min_risk": 2,
+          "max_risk": 5,
+          "decision": "REDUCE"
+        },
+        {
+          "min_risk": 1,
+          "max_risk": 1,
+          "decision": "RETAIN"
+        }
+      ],
+      "iso_mandated": false,
+      "source": "Final report Section 3.7 / Korean manual example adopted by the study"
+    },
+    "cal_matrix": {
+      "SEVERE": {
+        "PHYSICAL": "CAL2",
+        "LOCAL": "CAL3",
+        "ADJACENT": "CAL4",
+        "NETWORK": "CAL4"
+      },
+      "MAJOR": {
+        "PHYSICAL": "CAL1",
+        "LOCAL": "CAL2",
+        "ADJACENT": "CAL3",
+        "NETWORK": "CAL4"
+      },
+      "MODERATE": {
+        "PHYSICAL": "CAL1",
+        "LOCAL": "CAL1",
+        "ADJACENT": "CAL2",
+        "NETWORK": "CAL3"
+      },
+      "NEGLIGIBLE": {
+        "PHYSICAL": null,
+        "LOCAL": null,
+        "ADJACENT": null,
+        "NETWORK": null
+      }
+    }
+  },
+  "function_asset_links": [
+    {
+      "function_id": "IF-01",
+      "asset_id": "AS-01",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-02",
+      "asset_id": "AS-02",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-03",
+      "asset_id": "AS-03",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-04",
+      "asset_id": "AS-04",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-05",
+      "asset_id": "AS-05",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-06",
+      "asset_id": "AS-06",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-07",
+      "asset_id": "AS-07",
+      "relation": "PRIMARY_COMMAND_ASSET",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 6",
+        "Final report Table 9"
+      ]
+    }
+  ],
+  "function_damage_links": [
+    {
+      "function_id": "IF-01",
+      "damage_ids": [
+        "DS-01",
+        "DS-02"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-02",
+      "damage_ids": [
+        "DS-03",
+        "DS-04"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-03",
+      "damage_ids": [
+        "DS-05",
+        "DS-06",
+        "DS-07"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-04",
+      "damage_ids": [
+        "DS-08",
+        "DS-09"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-05",
+      "damage_ids": [
+        "DS-10",
+        "DS-11"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-06",
+      "damage_ids": [
+        "DS-12",
+        "DS-13"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    },
+    {
+      "function_id": "IF-07",
+      "damage_ids": [
+        "DS-14",
+        "DS-15"
+      ],
+      "relation": "PRIMARY_FUNCTION_DAMAGE_SCOPE",
+      "evidence_basis": "DERIVED",
+      "source_refs": [
+        "Final report Table 9"
+      ]
+    }
+  ],
+  "reference_architecture": {
+    "nodes": [
+      {
+        "id": "ITEM-01",
+        "type": "ITEM",
+        "boundary": "ITEM"
+      },
+      {
+        "id": "OE-01",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-02",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-03",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-04",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-05",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-06",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-07",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "OE-08",
+        "type": "OPERATIONAL_ENVIRONMENT",
+        "boundary": "OUTSIDE_ITEM"
+      },
+      {
+        "id": "C-01",
+        "type": "LOGICAL_COMPONENT",
+        "boundary": "ITEM_INTERNAL"
+      },
+      {
+        "id": "C-02",
+        "type": "LOGICAL_COMPONENT",
+        "boundary": "ITEM_INTERNAL"
+      },
+      {
+        "id": "C-03",
+        "type": "LOGICAL_COMPONENT",
+        "boundary": "ITEM_INTERNAL"
+      },
+      {
+        "id": "C-04",
+        "type": "LOGICAL_COMPONENT",
+        "boundary": "ITEM_INTERNAL"
+      },
+      {
+        "id": "C-05",
+        "type": "LOGICAL_COMPONENT",
+        "boundary": "ITEM_INTERNAL"
+      }
+    ],
+    "edges": [
+      {
+        "source": "OE-01",
+        "target": "OE-02",
+        "relation": "REQUESTS_VIA",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "OE-02",
+        "target": "OE-03",
+        "relation": "SUBMITS_REMOTE_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "OE-04",
+        "target": "OE-03",
+        "relation": "PROVIDES_IDENTITY_OR_AUTH_CONTEXT",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Table 4"
+      },
+      {
+        "source": "OE-03",
+        "target": "OE-05",
+        "relation": "SENDS_TOWARD_VEHICLE",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "OE-05",
+        "target": "C-01",
+        "relation": "DELIVERS_EXTERNAL_REMOTE_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1"
+      },
+      {
+        "source": "C-01",
+        "target": "C-02",
+        "relation": "FORWARDS_RECEIVED_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "C-02",
+        "target": "C-03",
+        "relation": "PASSES_PARSED_COMMAND_FOR_DECISION",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "OE-06",
+        "target": "C-03",
+        "relation": "PROVIDES_VEHICLE_STATE_INPUT",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 4"
+      },
+      {
+        "source": "C-03",
+        "target": "C-04",
+        "relation": "FORWARDS_ACCEPTED_COMMAND",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "C-04",
+        "target": "C-05",
+        "relation": "ROUTES_TO_TARGET_FUNCTION",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Figure 1 / Table 5"
+      },
+      {
+        "source": "OE-07",
+        "target": "ITEM-01",
+        "relation": "INTERACTS_FOR_DIAGNOSTIC_OR_SERVICE",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Table 4"
+      },
+      {
+        "source": "OE-08",
+        "target": "ITEM-01",
+        "relation": "INTERACTS_FOR_CHARGING",
+        "evidence_basis": "REFERENCE",
+        "source_ref": "Final report Table 4"
+      }
+    ],
+    "note": "Logical reference architecture only. It is not an OEM-specific ECU/CAN/Ethernet topology."
+  },
+  "security_control_catalog": {
+    "status": "NOT_DEFINED_AS_COMPLETE_FIRST_CLASS_CATALOG_IN_CANONICAL_TARA_REPORT",
+    "controls": [],
+    "note": "The final report contains goals, claims, verification items, formal properties and test evidence, but not a complete standalone control/defense catalog. No controls are invented here."
+  }
+}
